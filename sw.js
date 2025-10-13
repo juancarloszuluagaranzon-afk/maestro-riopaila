@@ -1,34 +1,54 @@
 const CACHE_NAME = 'riopaila-maestro-v1';
-const TO_CACHE = [
-  '/maestro-riopaila/',
-  '/maestro-riopaila/index.html',
-  '/maestro-riopaila/manifest.json',
-  '/maestro-riopaila/icon-192.png',
-  '/maestro-riopaila/icon-512.png'
+const urlsToCache = [
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
-self.addEventListener('install', event => {
+// Instalación del service worker
+self.addEventListener('install', (event) => {
+  console.log('Service Worker: Instalando...');
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(TO_CACHE);
-    })
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('Cache abierto');
+        return cache.addAll(urlsToCache);
+      })
   );
   self.skipWaiting();
 });
 
-self.addEventListener('activate', event => {
+// Activación del service worker
+self.addEventListener('activate', (event) => {
+  console.log('Service Worker: Activado');
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.map(key => key !== CACHE_NAME && caches.delete(key)))
-    )
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Service Worker: Eliminando caché antiguo', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
   );
   self.clients.claim();
 });
 
-self.addEventListener('fetch', event => {
+// Interceptar peticiones
+self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
+    caches.match(event.request)
+      .then((response) => {
+        // Cache hit - devolver respuesta
+        if (response) {
+          return response;
+        }
+        return fetch(event.request);
+      }
+    )
   );
 });
