@@ -3,10 +3,9 @@ const CACHE_VERSION = 'v1.5.0'; // CAMBIAR ESTE NÚMERO CON CADA ACTUALIZACIÓN
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/icon-192.png'
-  // NO incluir el CSV aquí para que siempre se cargue fresco
+  './',
+  './index.html',
+  './icon-192.png'
 ];
 
 // Instalar
