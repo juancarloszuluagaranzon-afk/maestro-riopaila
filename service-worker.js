@@ -3,7 +3,7 @@
 // Versión: v1.6.1
 // ===============================
 
-const CACHE_VERSION = 'v1.6.1';
+const CACHE_VERSION = 'v1.6.2';
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 
 // Recursos que se guardan en caché (sin incluir el CSV)
