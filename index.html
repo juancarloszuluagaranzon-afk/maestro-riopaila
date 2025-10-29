@@ -16,12 +16,16 @@ header .update{font-size:0.85rem;color:#475569}
 input,button{padding:8px;border-radius:8px;border:1px solid #e6e9ee}
 button.primary{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
 button.primary:hover{opacity:0.9}
+button.secondary{background:#64748b;color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:0.85rem}
+button.secondary:hover{opacity:0.9}
 .table-wrap{overflow-x:auto;background:#fff;border-radius:8px;padding:8px}
 table{border-collapse:collapse;width:100%;min-width:800px}
 th,td{padding:8px;border-bottom:1px solid #eef2f7;white-space:nowrap;text-align:left;font-size:13px}
 th{background:#fbfeff;position:sticky;top:0;font-weight:600}
 .loading{text-align:center;padding:40px;color:#64748b}
 .error{background:#fee;color:#c00;padding:12px;border-radius:8px;margin:16px}
+.update-banner{background:#fef3c7;border-left:4px solid #f59e0b;padding:12px;margin-bottom:16px;border-radius:4px}
+.update-banner button{margin-left:12px}
 @media (max-width:600px){input,button{padding:6px;font-size:14px} th,td{padding:6px;font-size:12px}}
 </style>
 </head>
@@ -34,9 +38,15 @@ th{background:#fbfeff;position:sticky;top:0;font-weight:600}
 </div>
 </header>
 <div class="container">
+  <div id="updateBanner" class="update-banner" style="display:none">
+    ⚠️ Hay una nueva versión disponible. 
+    <button class="secondary" onclick="updateApp()">Actualizar ahora</button>
+  </div>
+  
   <div class="controls">
     <label>Buscar: <input id="searchInput" placeholder="Buscar..."></label>
     <button id="downloadCsv" class="primary">Descargar CSV</button>
+    <button id="clearCache" class="secondary" title="Limpiar caché y recargar">🔄 Limpiar Caché</button>
   </div>
   <div id="loadingMsg" class="loading">Cargando datos...</div>
   <div id="errorMsg" class="error" style="display:none"></div>
@@ -48,14 +58,75 @@ th{background:#fbfeff;position:sticky;top:0;font-weight:600}
   </div>
 </div>
 <script>
+// Versión de la app - CAMBIAR ESTE NÚMERO CADA VEZ QUE ACTUALICES
+const APP_VERSION = 'v1.1.0';
+
 let HEADERS = [];
 let ROWS = [];
 let currentPage = 1, pageSize = 25;
 
-// Cargar el CSV
+// Detectar si hay una nueva versión del Service Worker
+let newWorkerWaiting = null;
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          // Hay una nueva versión disponible
+          newWorkerWaiting = newWorker;
+          document.getElementById('updateBanner').style.display = 'block';
+        }
+      });
+    });
+  });
+  
+  // Escuchar cuando el nuevo SW toma el control
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
+}
+
+function updateApp() {
+  if (newWorkerWaiting) {
+    newWorkerWaiting.postMessage({ type: 'SKIP_WAITING' });
+  }
+}
+
+// Función para limpiar caché manualmente
+async function clearCache() {
+  if ('serviceWorker' in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (const registration of registrations) {
+      await registration.unregister();
+    }
+  }
+  
+  if ('caches' in window) {
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.map(name => caches.delete(name)));
+  }
+  
+  // Limpiar localStorage
+  localStorage.clear();
+  
+  alert('Caché limpiado. La página se recargará.');
+  window.location.reload(true);
+}
+
+// Cargar el CSV con cache busting
 async function loadCSV() {
   try {
-    const response = await fetch('maestro.csv');
+    // Agregar timestamp para forzar recarga
+    const cacheBuster = new Date().getTime();
+    const response = await fetch(`MAESTRO 28 OCTUBRE 2025.csv?v=${cacheBuster}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    });
+    
     if (!response.ok) throw new Error('No se pudo cargar el archivo CSV');
     
     const text = await response.text();
@@ -69,7 +140,6 @@ async function loadCSV() {
     // El resto son los datos
     ROWS = lines.slice(1).map(line => {
       const values = line.split(';');
-      // Asegurar que cada fila tenga el mismo número de columnas que headers
       while (values.length < HEADERS.length) values.push('');
       return values.slice(0, HEADERS.length).map(v => v.trim());
     });
@@ -80,6 +150,9 @@ async function loadCSV() {
     document.getElementById('loadingMsg').style.display = 'none';
     document.querySelector('.table-wrap').style.display = 'block';
     document.getElementById('pagination').style.display = 'flex';
+    
+    // Guardar versión en localStorage
+    localStorage.setItem('appVersion', APP_VERSION);
     
     renderTable();
   } catch (error) {
@@ -114,6 +187,7 @@ function renderTable() {
 document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; renderTable(); });
 document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderTable(); } });
 document.getElementById('nextPage').addEventListener('click', () => { currentPage++; renderTable(); });
+document.getElementById('clearCache').addEventListener('click', clearCache);
 document.getElementById('downloadCsv').addEventListener('click', () => {
   const sep = ',', lines = [HEADERS.join(sep)];
   ROWS.forEach(r => lines.push(r.map(c => '"' + String(c||'').replace(/"/g, '""') + '"').join(sep)));
@@ -124,9 +198,14 @@ document.getElementById('downloadCsv').addEventListener('click', () => {
   a.click();
 });
 
-// Cargar datos al iniciar
-loadCSV();
+// Verificar versión al cargar
+const savedVersion = localStorage.getItem('appVersion');
+if (savedVersion && savedVersion !== APP_VERSION) {
+  console.log('Nueva versión detectada, limpiando caché...');
+  clearCache();
+} else {
+  loadCSV();
+}
 </script>
 </body>
 </html>
-
