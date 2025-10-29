@@ -1,15 +1,25 @@
-// service-worker.js
-const CACHE_VERSION = 'v1.6.0'; // CAMBIAR ESTE NÚMERO CON CADA ACTUALIZACIÓN
+// ===============================
+// Service Worker - Maestro Riopaila
+// Versión: v1.6.1
+// ===============================
+
+const CACHE_VERSION = 'v1.6.1';
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 
+// Recursos que se guardan en caché (sin incluir el CSV)
 const urlsToCache = [
   './',
   './index.html',
-  './icon-192.png'
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
-// Instalar
+// ===============================
+// INSTALACIÓN
+// ===============================
 self.addEventListener('install', event => {
+  console.log('[Service Worker] Instalando versión', CACHE_VERSION);
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
@@ -17,15 +27,18 @@ self.addEventListener('install', event => {
   );
 });
 
-// Activar y limpiar cachés antiguas
+// ===============================
+// ACTIVACIÓN (limpiar cachés viejas)
+// ===============================
 self.addEventListener('activate', event => {
+  console.log('[Service Worker] Activando y limpiando versiones antiguas...');
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Eliminando caché antigua:', cacheName);
-            return caches.delete(cacheName);
+        cacheNames.map(name => {
+          if (name !== CACHE_NAME) {
+            console.log('[Service Worker] Eliminando caché obsoleta:', name);
+            return caches.delete(name);
           }
         })
       );
@@ -33,29 +46,48 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch - estrategia Network First para CSV
+// ===============================
+// FETCH: Política de red
+// ===============================
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-  
-  // Si es el CSV, siempre ir a la red primero
-  if (url.pathname.includes('.csv')) {
+
+  // 👉 CSV SIEMPRE desde la red (no se guarda en caché)
+  if (url.pathname.endsWith('.csv')) {
     event.respondWith(
       fetch(event.request)
-        .catch(() => caches.match(event.request))
+        .then(response => {
+          console.log('[Service Worker] CSV actualizado desde la red.');
+          return response;
+        })
+        .catch(() => {
+          console.warn('[Service Worker] No hay conexión, no se puede actualizar el CSV.');
+          return caches.match(event.request);
+        })
     );
     return;
   }
-  
-  // Para otros recursos, cache first
+
+  // 👉 Otros recursos: Cache First
   event.respondWith(
-    caches.match(event.request)
-      .then(response => response || fetch(event.request))
+    caches.match(event.request).then(resp => {
+      return resp || fetch(event.request).then(response => {
+        return caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, response.clone());
+          return response;
+        });
+      });
+    })
   );
 });
 
-// Escuchar mensajes para actualización inmediata
+// ===============================
+// MENSAJE: Activar nueva versión
+// ===============================
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('[Service Worker] Actualización forzada.');
     self.skipWaiting();
   }
 });
+
