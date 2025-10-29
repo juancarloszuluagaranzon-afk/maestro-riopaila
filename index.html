@@ -59,7 +59,8 @@ th{background:#fbfeff;position:sticky;top:0;font-weight:600}
 </div>
 <script>
 // Versión de la app - CAMBIAR ESTE NÚMERO CADA VEZ QUE ACTUALICES
-const APP_VERSION = 'v1.1.0';
+const APP_VERSION = 'v1.2.0';
+const CSV_FILE = 'maestro.csv';
 
 let HEADERS = [];
 let ROWS = [];
@@ -69,20 +70,18 @@ let currentPage = 1, pageSize = 25;
 let newWorkerWaiting = null;
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js').then(reg => {
+  navigator.serviceWorker.register('service-worker.js').then(reg => {
     reg.addEventListener('updatefound', () => {
       const newWorker = reg.installing;
       newWorker.addEventListener('statechange', () => {
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          // Hay una nueva versión disponible
           newWorkerWaiting = newWorker;
           document.getElementById('updateBanner').style.display = 'block';
         }
       });
     });
-  });
+  }).catch(err => console.log('Service Worker no disponible:', err));
   
-  // Escuchar cuando el nuevo SW toma el control
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     window.location.reload();
   });
@@ -96,46 +95,66 @@ function updateApp() {
 
 // Función para limpiar caché manualmente
 async function clearCache() {
-  if ('serviceWorker' in navigator) {
-    const registrations = await navigator.serviceWorker.getRegistrations();
-    for (const registration of registrations) {
-      await registration.unregister();
+  try {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        await registration.unregister();
+      }
     }
+    
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(name => caches.delete(name)));
+    }
+    
+    localStorage.clear();
+    alert('Caché limpiado. La página se recargará.');
+    window.location.reload(true);
+  } catch (error) {
+    console.error('Error al limpiar caché:', error);
+    alert('Error al limpiar caché. Intenta cerrar y abrir la app de nuevo.');
   }
-  
-  if ('caches' in window) {
-    const cacheNames = await caches.keys();
-    await Promise.all(cacheNames.map(name => caches.delete(name)));
-  }
-  
-  // Limpiar localStorage
-  localStorage.clear();
-  
-  alert('Caché limpiado. La página se recargará.');
-  window.location.reload(true);
 }
 
 // Cargar el CSV con cache busting
 async function loadCSV() {
   try {
-    // Agregar timestamp para forzar recarga
-    const cacheBuster = new Date().getTime();
-    const response = await fetch(`MAESTRO 28 OCTUBRE 2025.csv?v=${cacheBuster}`, {
+    const cacheBuster = Date.now();
+    console.log('Intentando cargar:', CSV_FILE);
+    
+    const response = await fetch(`${CSV_FILE}?v=${cacheBuster}`, {
       cache: 'no-store',
       headers: {
-        'Cache-Control': 'no-cache'
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
     
-    if (!response.ok) throw new Error('No se pudo cargar el archivo CSV');
+    console.log('Response status:', response.status);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: No se pudo cargar el archivo CSV. Verifica que "${CSV_FILE}" esté en el repositorio.`);
+    }
     
     const text = await response.text();
-    const lines = text.split('\n').filter(line => line.trim());
+    console.log('CSV cargado, tamaño:', text.length, 'caracteres');
     
-    if (lines.length === 0) throw new Error('El archivo CSV está vacío');
+    if (!text || text.trim().length === 0) {
+      throw new Error('El archivo CSV está vacío');
+    }
+    
+    const lines = text.split('\n').filter(line => line.trim());
+    console.log('Líneas encontradas:', lines.length);
+    
+    if (lines.length === 0) {
+      throw new Error('No se encontraron datos en el CSV');
+    }
     
     // Primera línea son los headers
     HEADERS = lines[0].split(';').map(h => h.trim());
+    console.log('Headers:', HEADERS.length, 'columnas');
     
     // El resto son los datos
     ROWS = lines.slice(1).map(line => {
@@ -146,21 +165,30 @@ async function loadCSV() {
     
     // Filtrar filas vacías o con errores
     ROWS = ROWS.filter(row => row.some(cell => cell && cell !== '#¡REF!'));
+    console.log('Filas procesadas:', ROWS.length);
+    
+    if (ROWS.length === 0) {
+      throw new Error('No se encontraron filas válidas en el CSV');
+    }
     
     document.getElementById('loadingMsg').style.display = 'none';
     document.querySelector('.table-wrap').style.display = 'block';
     document.getElementById('pagination').style.display = 'flex';
     
-    // Guardar versión en localStorage
     localStorage.setItem('appVersion', APP_VERSION);
+    localStorage.setItem('lastUpdate', new Date().toISOString());
     
     renderTable();
+    console.log('Tabla renderizada correctamente');
+    
   } catch (error) {
+    console.error('Error completo:', error);
     document.getElementById('loadingMsg').style.display = 'none';
     const errorMsg = document.getElementById('errorMsg');
-    errorMsg.textContent = 'Error al cargar los datos: ' + error.message;
+    errorMsg.innerHTML = `<strong>Error al cargar los datos:</strong><br>${error.message}<br><br>
+      <small>Verifica que el archivo <code>${CSV_FILE}</code> esté en la raíz del repositorio de GitHub.<br>
+      Si el problema persiste, presiona el botón "Limpiar Caché".</small>`;
     errorMsg.style.display = 'block';
-    console.error('Error:', error);
   }
 }
 
@@ -194,18 +222,19 @@ document.getElementById('downloadCsv').addEventListener('click', () => {
   const blob = new Blob([lines.join('\n')], {type: 'text/csv;charset=utf-8;'});
   const a = document.createElement('a'); 
   a.href = URL.createObjectURL(blob);
-  a.download = 'Maestro_Riopaila.csv'; 
+  a.download = 'Maestro_Riopaila_' + new Date().toISOString().split('T')[0] + '.csv'; 
   a.click();
 });
 
 // Verificar versión al cargar
 const savedVersion = localStorage.getItem('appVersion');
 if (savedVersion && savedVersion !== APP_VERSION) {
-  console.log('Nueva versión detectada, limpiando caché...');
-  clearCache();
-} else {
-  loadCSV();
+  console.log('Nueva versión detectada:', savedVersion, '->', APP_VERSION);
+  localStorage.setItem('appVersion', APP_VERSION);
 }
+
+// Cargar datos
+loadCSV();
 </script>
 </body>
 </html>
