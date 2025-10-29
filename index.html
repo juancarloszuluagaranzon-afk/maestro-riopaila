@@ -55,7 +55,7 @@ let currentPage = 1, pageSize = 25;
 // Cargar el CSV
 async function loadCSV() {
   try {
-    const response = await fetch('MAESTRO 28 OCTUBRE 2025.csv');
+    const response = await fetch('maestro.csv');
     if (!response.ok) throw new Error('No se pudo cargar el archivo CSV');
     
     const text = await response.text();
@@ -129,3 +129,4 @@ loadCSV();
 </script>
 </body>
 </html>
+
