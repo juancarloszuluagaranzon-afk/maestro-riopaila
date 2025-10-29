@@ -1,8 +1,7 @@
 // ===============================
 // Service Worker - Maestro Riopaila
-// Versión: v1.6.1
+// Versión: v1.6.2  ⬅️ CORREGIDO
 // ===============================
-
 const CACHE_VERSION = 'v1.6.2';
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 
@@ -20,10 +19,15 @@ const urlsToCache = [
 // ===============================
 self.addEventListener('install', event => {
   console.log('[Service Worker] Instalando versión', CACHE_VERSION);
+  // ⬅️ CAMBIO: skipWaiting() INMEDIATAMENTE
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
-      .then(() => self.skipWaiting())
+      .then(cache => {
+        console.log('[Service Worker] Guardando recursos en caché');
+        return cache.addAll(urlsToCache);
+      })
+      .catch(err => console.error('[Service Worker] Error al cachear:', err))
   );
 });
 
@@ -31,7 +35,7 @@ self.addEventListener('install', event => {
 // ACTIVACIÓN (limpiar cachés viejas)
 // ===============================
 self.addEventListener('activate', event => {
-  console.log('[Service Worker] Activando y limpiando versiones antiguas...');
+  console.log('[Service Worker] Activando versión', CACHE_VERSION);
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -42,7 +46,10 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => {
+      console.log('[Service Worker] Tomando control de todas las páginas');
+      return self.clients.claim();
+    })
   );
 });
 
@@ -51,31 +58,53 @@ self.addEventListener('activate', event => {
 // ===============================
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-
+  
   // 👉 CSV SIEMPRE desde la red (no se guarda en caché)
   if (url.pathname.endsWith('.csv')) {
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request, { cache: 'no-store' })  // ⬅️ AÑADIDO: no-store
         .then(response => {
-          console.log('[Service Worker] CSV actualizado desde la red.');
+          console.log('[Service Worker] CSV cargado desde la red');
           return response;
         })
-        .catch(() => {
-          console.warn('[Service Worker] No hay conexión, no se puede actualizar el CSV.');
+        .catch(err => {
+          console.warn('[Service Worker] Error al cargar CSV:', err);
+          // Intentar caché como fallback
           return caches.match(event.request);
         })
     );
     return;
   }
-
-  // 👉 Otros recursos: Cache First
+  
+  // 👉 Otros recursos: Cache First con actualización en background
   event.respondWith(
-    caches.match(event.request).then(resp => {
-      return resp || fetch(event.request).then(response => {
-        return caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, response.clone());
+    caches.match(event.request).then(cachedResponse => {
+      // Si está en caché, devolverlo pero actualizar en background
+      if (cachedResponse) {
+        // Actualizar caché en background
+        fetch(event.request).then(response => {
+          if (response && response.status === 200) {
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, response);
+            });
+          }
+        }).catch(() => {});
+        
+        return cachedResponse;
+      }
+      
+      // Si no está en caché, traerlo de la red
+      return fetch(event.request).then(response => {
+        if (!response || response.status !== 200) {
           return response;
+        }
+        
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseToCache);
         });
+        
+        return response;
       });
     })
   );
@@ -86,8 +115,7 @@ self.addEventListener('fetch', event => {
 // ===============================
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
-    console.log('[Service Worker] Actualización forzada.');
+    console.log('[Service Worker] Forzando actualización inmediata');
     self.skipWaiting();
   }
 });
-
