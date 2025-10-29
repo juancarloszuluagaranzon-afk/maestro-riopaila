@@ -1,5 +1,5 @@
 // service-worker.js
-const CACHE_VERSION = 'v1.2.0'; // CAMBIAR ESTE NÚMERO CON CADA ACTUALIZACIÓN
+const CACHE_VERSION = 'v1.3.0'; // CAMBIAR ESTE NÚMERO CON CADA ACTUALIZACIÓN
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 
 const urlsToCache = [
