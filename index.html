@@ -59,154 +59,111 @@ th{background:#fbfeff;position:sticky;top:0;font-weight:600}
 </div>
 <script>
 // Versión de la app - CAMBIAR ESTE NÚMERO CADA VEZ QUE ACTUALICES
-const APP_VERSION = 'v1.2.0';
-const CSV_FILE = 'maestro.csv';
+const APP_VERSION = 'v1.3.0';
+const CSV_FILE = 'maestro.csv'; // Archivo CSV alojado en tu repo
 
 let HEADERS = [];
 let ROWS = [];
 let currentPage = 1, pageSize = 25;
-
-// Detectar si hay una nueva versión del Service Worker
 let newWorkerWaiting = null;
 
+// =======================
+// Registro del Service Worker
+// =======================
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js').then(reg => {
-    reg.addEventListener('updatefound', () => {
-      const newWorker = reg.installing;
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          newWorkerWaiting = newWorker;
-          document.getElementById('updateBanner').style.display = 'block';
-        }
+  navigator.serviceWorker.register('service-worker.js')
+    .then(reg => {
+      console.log('Service Worker registrado:', reg);
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            newWorkerWaiting = newWorker;
+            document.getElementById('updateBanner').style.display = 'block';
+          }
+        });
       });
-    });
-  }).catch(err => console.log('Service Worker no disponible:', err));
-  
+    })
+    .catch(err => console.log('Service Worker no disponible:', err));
+
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     window.location.reload();
   });
 }
 
 function updateApp() {
-  if (newWorkerWaiting) {
-    newWorkerWaiting.postMessage({ type: 'SKIP_WAITING' });
-  }
+  if (newWorkerWaiting) newWorkerWaiting.postMessage({ type: 'SKIP_WAITING' });
 }
 
-// Función para limpiar caché manualmente
+// =======================
+// Limpiar caché manualmente
+// =======================
 async function clearCache() {
   try {
     if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const registration of registrations) {
-        await registration.unregister();
-      }
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) await reg.unregister();
     }
-    
     if ('caches' in window) {
       const cacheNames = await caches.keys();
       await Promise.all(cacheNames.map(name => caches.delete(name)));
     }
-    
     localStorage.clear();
     alert('Caché limpiado. La página se recargará.');
     window.location.reload(true);
-  } catch (error) {
-    console.error('Error al limpiar caché:', error);
+  } catch (err) {
+    console.error('Error al limpiar caché:', err);
     alert('Error al limpiar caché. Intenta cerrar y abrir la app de nuevo.');
   }
 }
 
-// Cargar el CSV con cache busting
+// =======================
+// Cargar CSV con "cache busting"
+// =======================
 async function loadCSV() {
   try {
     const cacheBuster = Date.now();
-    console.log('Intentando cargar:', CSV_FILE);
-    
-    const response = await fetch(`${CSV_FILE}?v=${cacheBuster}`, {
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-    });
-    
-    console.log('Response status:', response.status);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: No se pudo cargar el archivo CSV. Verifica que "${CSV_FILE}" esté en el repositorio.`);
-    }
-    
+    const response = await fetch(`${CSV_FILE}?v=${cacheBuster}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`No se pudo cargar el archivo CSV (${response.status})`);
     const text = await response.text();
-    console.log('CSV cargado, tamaño:', text.length, 'caracteres');
-    
-    if (!text || text.trim().length === 0) {
-      throw new Error('El archivo CSV está vacío');
-    }
-    
+
     const lines = text.split('\n').filter(line => line.trim());
-    console.log('Líneas encontradas:', lines.length);
-    
-    if (lines.length === 0) {
-      throw new Error('No se encontraron datos en el CSV');
-    }
-    
-    // Primera línea son los headers
-    HEADERS = lines[0].split(';').map(h => h.trim());
-    console.log('Headers:', HEADERS.length, 'columnas');
-    
-    // El resto son los datos
-    ROWS = lines.slice(1).map(line => {
-      const values = line.split(';');
-      while (values.length < HEADERS.length) values.push('');
-      return values.slice(0, HEADERS.length).map(v => v.trim());
-    });
-    
-    // Filtrar filas vacías o con errores
-    ROWS = ROWS.filter(row => row.some(cell => cell && cell !== '#¡REF!'));
-    console.log('Filas procesadas:', ROWS.length);
-    
-    if (ROWS.length === 0) {
-      throw new Error('No se encontraron filas válidas en el CSV');
-    }
-    
+    if (lines.length === 0) throw new Error('El CSV está vacío o mal formateado.');
+
+    // Detectar separador automáticamente
+    const sep = lines[0].includes(';') ? ';' : ',';
+    HEADERS = lines[0].split(sep).map(h => h.trim());
+    ROWS = lines.slice(1).map(line => line.split(sep).map(v => v.trim()));
+    ROWS = ROWS.filter(row => row.some(cell => cell));
+
     document.getElementById('loadingMsg').style.display = 'none';
     document.querySelector('.table-wrap').style.display = 'block';
     document.getElementById('pagination').style.display = 'flex';
-    
-    localStorage.setItem('appVersion', APP_VERSION);
-    localStorage.setItem('lastUpdate', new Date().toISOString());
-    
     renderTable();
-    console.log('Tabla renderizada correctamente');
-    
   } catch (error) {
-    console.error('Error completo:', error);
     document.getElementById('loadingMsg').style.display = 'none';
-    const errorMsg = document.getElementById('errorMsg');
-    errorMsg.innerHTML = `<strong>Error al cargar los datos:</strong><br>${error.message}<br><br>
-      <small>Verifica que el archivo <code>${CSV_FILE}</code> esté en la raíz del repositorio de GitHub.<br>
-      Si el problema persiste, presiona el botón "Limpiar Caché".</small>`;
-    errorMsg.style.display = 'block';
+    const errDiv = document.getElementById('errorMsg');
+    errDiv.style.display = 'block';
+    errDiv.innerHTML = `<strong>Error:</strong> ${error.message}<br><small>Verifica que el archivo <code>${CSV_FILE}</code> esté en el repositorio. Si el problema persiste, presiona "Limpiar Caché".</small>`;
   }
 }
 
+// =======================
+// Renderizado de la tabla
+// =======================
 function renderTable() {
   const tbody = document.querySelector('#maestro tbody');
   const thead = document.querySelector('#maestro thead');
   const search = document.getElementById('searchInput').value.toLowerCase();
-  
+
   const filtered = ROWS.filter(r => r.some(v => String(v||'').toLowerCase().includes(search)));
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   if (currentPage > totalPages) currentPage = totalPages;
-  
   const start = (currentPage - 1) * pageSize;
   const pageRows = filtered.slice(start, start + pageSize);
-  
-  thead.innerHTML = '<tr>' + HEADERS.map(h => '<th>' + h + '</th>').join('') + '</tr>';
-  tbody.innerHTML = pageRows.map(r => '<tr>' + r.map(c => '<td>' + (c || '') + '</td>').join('') + '</tr>').join('');
-  
+
+  thead.innerHTML = '<tr>' + HEADERS.map(h => `<th>${h}</th>`).join('') + '</tr>';
+  tbody.innerHTML = pageRows.map(r => '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('');
   document.getElementById('pageInfo').innerText = `Página ${currentPage} / ${totalPages} (${filtered.length} registros)`;
   document.getElementById('prevPage').disabled = currentPage <= 1;
   document.getElementById('nextPage').disabled = currentPage >= totalPages;
@@ -214,26 +171,19 @@ function renderTable() {
 
 document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; renderTable(); });
 document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderTable(); } });
-document.getElementById('nextPage').addEventListener('click', () => { currentPage++; renderTable(); });
+document.getElementById('nextPage').addEventListener('click', () => { if (currentPage < Math.ceil(ROWS.length / pageSize)) { currentPage++; renderTable(); } });
 document.getElementById('clearCache').addEventListener('click', clearCache);
 document.getElementById('downloadCsv').addEventListener('click', () => {
   const sep = ',', lines = [HEADERS.join(sep)];
-  ROWS.forEach(r => lines.push(r.map(c => '"' + String(c||'').replace(/"/g, '""') + '"').join(sep)));
-  const blob = new Blob([lines.join('\n')], {type: 'text/csv;charset=utf-8;'});
-  const a = document.createElement('a'); 
+  ROWS.forEach(r => lines.push(r.map(c => `"${String(c||'').replace(/"/g, '""')}"`).join(sep)));
+  const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'Maestro_Riopaila_' + new Date().toISOString().split('T')[0] + '.csv'; 
+  a.download = 'Maestro_Riopaila_' + new Date().toISOString().split('T')[0] + '.csv';
   a.click();
 });
 
-// Verificar versión al cargar
-const savedVersion = localStorage.getItem('appVersion');
-if (savedVersion && savedVersion !== APP_VERSION) {
-  console.log('Nueva versión detectada:', savedVersion, '->', APP_VERSION);
-  localStorage.setItem('appVersion', APP_VERSION);
-}
-
-// Cargar datos
+// Iniciar carga
 loadCSV();
 </script>
 </body>
