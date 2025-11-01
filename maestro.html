@@ -27,11 +27,6 @@ header {
   top:0;
   z-index:10;
 }
-header a {
-  display:flex;
-  align-items:center;
-  text-decoration:none;
-}
 header img.logo {
   width:48px;
   height:48px;
@@ -49,7 +44,9 @@ header .update {
   font-size:0.85rem;
   color:#475569;
 }
-.container { padding:16px; }
+.container {
+  padding:16px;
+}
 .controls {
   display:flex;
   flex-wrap:wrap;
@@ -70,7 +67,9 @@ button.primary {
   border-radius:8px;
   cursor:pointer;
 }
-button.primary:hover { opacity:0.9; }
+button.primary:hover {
+  opacity:0.9;
+}
 button.secondary {
   background:#64748b;
   color:#fff;
@@ -80,7 +79,9 @@ button.secondary {
   cursor:pointer;
   font-size:0.85rem;
 }
-button.secondary:hover { opacity:0.9; }
+button.secondary:hover {
+  opacity:0.9;
+}
 .table-wrap {
   overflow-x:auto;
   background:#fff;
@@ -124,13 +125,22 @@ th {
   margin-bottom:16px;
   border-radius:4px;
 }
-.update-banner button { margin-left:12px; }
+.update-banner button {
+  margin-left:12px;
+}
 @media (max-width:600px) {
-  input,button { padding:6px; font-size:14px; }
-  th,td { padding:6px; font-size:12px; }
+  input,button {
+    padding:6px;
+    font-size:14px;
+  }
+  th,td {
+    padding:6px;
+    font-size:12px;
+  }
 }
 </style>
 </head>
+
 <body>
 <header>
   <a href="index.html" title="Volver al inicio">
@@ -144,21 +154,25 @@ th {
 
 <div class="container">
   <div id="updateBanner" class="update-banner" style="display:none">
-    ⚠️ Hay una nueva versión disponible.
+    ⚠️ Hay una nueva versión disponible. 
     <button class="secondary" onclick="updateApp()">Actualizar ahora</button>
   </div>
-
+  
   <div class="controls">
     <label>Buscar: <input id="searchInput" placeholder="Buscar..."></label>
     <button id="downloadCsv" class="primary">Descargar CSV</button>
-    <button id="clearCache" class="secondary" title="Limpiar caché y recargar">🔄 Limpiar Caché</button>
   </div>
 
   <div id="loadingMsg" class="loading">Cargando datos...</div>
   <div id="errorMsg" class="error" style="display:none"></div>
+
   <div class="table-wrap" style="display:none">
-    <table id="maestro"><thead></thead><tbody></tbody></table>
+    <table id="maestro">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
   </div>
+
   <div id="pagination" style="display:none;justify-content:center;align-items:center;gap:12px;margin:16px">
     <button id="prevPage" class="primary">← Anterior</button>
     <span id="pageInfo"></span>
@@ -170,14 +184,15 @@ th {
 // =======================
 // CONFIGURACIÓN PRINCIPAL
 // =======================
-const APP_VERSION = 'v1.7.2'; // ⬅️ Incrementa este número en cada actualización
+const APP_VERSION = 'v1.7.2'; // Incrementa este número con cada actualización
 const CSV_FILE = 'maestro.csv';
-let HEADERS = [], ROWS = [];
+let HEADERS = [];
+let ROWS = [];
 let currentPage = 1, pageSize = 25;
 let newWorkerWaiting = null;
 
 // =======================
-// REGISTRO DEL SERVICE WORKER
+// SERVICE WORKER
 // =======================
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('service-worker.js')
@@ -195,13 +210,10 @@ if ('serviceWorker' in navigator) {
     })
     .catch(err => console.log('Service Worker no disponible:', err));
 
+  // Auto-reload cuando se active una nueva versión
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     console.log('Nueva versión activada, recargando...');
-    setTimeout(() => {
-      const banner = document.getElementById('updateBanner');
-      if (banner) banner.style.display = 'none';
-      window.location.reload();
-    }, 800);
+    setTimeout(() => window.location.reload(), 1000);
   });
 }
 
@@ -210,41 +222,22 @@ function updateApp() {
 }
 
 // =======================
-// LIMPIAR CACHÉ MANUAL
-// =======================
-async function clearCache() {
-  try {
-    if ('serviceWorker' in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      for (const reg of regs) await reg.unregister();
-    }
-    if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map(name => caches.delete(name)));
-    }
-    localStorage.clear();
-    alert('Caché limpiado. La página se recargará.');
-    window.location.reload(true);
-  } catch (err) {
-    console.error('Error al limpiar caché:', err);
-    alert('Error al limpiar caché. Intenta cerrar y abrir la app de nuevo.');
-  }
-}
-
-// =======================
-// CARGAR CSV (sin caché)
+// CARGA DE CSV
 // =======================
 async function loadCSV() {
   try {
-    const response = await fetch(`${CSV_FILE}?v=${Date.now()}`, { cache: 'no-store' });
+    const cacheBuster = Date.now();
+    const response = await fetch(`${CSV_FILE}?v=${cacheBuster}`, { cache: 'no-store' });
     if (!response.ok) throw new Error(`No se pudo cargar el archivo CSV (${response.status})`);
     const text = await response.text();
+
     const lines = text.split('\n').filter(line => line.trim());
     if (lines.length === 0) throw new Error('El CSV está vacío o mal formateado.');
 
     const sep = lines[0].includes(';') ? ';' : ',';
     HEADERS = lines[0].split(sep).map(h => h.trim());
-    ROWS = lines.slice(1).map(line => line.split(sep).map(v => v.trim())).filter(row => row.some(cell => cell));
+    ROWS = lines.slice(1).map(line => line.split(sep).map(v => v.trim()));
+    ROWS = ROWS.filter(row => row.some(cell => cell));
 
     document.getElementById('loadingMsg').style.display = 'none';
     document.querySelector('.table-wrap').style.display = 'block';
@@ -259,7 +252,7 @@ async function loadCSV() {
 }
 
 // =======================
-// RENDER TABLA
+// RENDERIZAR TABLA
 // =======================
 function renderTable() {
   const tbody = document.querySelector('#maestro tbody');
@@ -285,11 +278,10 @@ function renderTable() {
 document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; renderTable(); });
 document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderTable(); } });
 document.getElementById('nextPage').addEventListener('click', () => { if (currentPage < Math.ceil(ROWS.length / pageSize)) { currentPage++; renderTable(); } });
-document.getElementById('clearCache').addEventListener('click', clearCache);
 document.getElementById('downloadCsv').addEventListener('click', () => {
   const sep = ',', lines = [HEADERS.join(sep)];
   ROWS.forEach(r => lines.push(r.map(c => `"${String(c||'').replace(/"/g, '""')}"`).join(sep)));
-  const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const blob = new Blob([lines.join('\n')], { type:'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'Maestro_Riopaila_' + new Date().toISOString().split('T')[0] + '.csv';
@@ -297,22 +289,7 @@ document.getElementById('downloadCsv').addEventListener('click', () => {
 });
 
 // =======================
-// REDIRECCIÓN DEL LOGO (modo offline seguro)
-// =======================
-document.querySelector('header a').addEventListener('click', async (e) => {
-  e.preventDefault();
-  try {
-    const cache = await caches.open('riopaila-maestro-v1.7.2');
-    const cached = await cache.match('index.html');
-    if (cached) window.location.href = 'index.html';
-    else window.location.href = 'index.html';
-  } catch {
-    window.location.href = 'index.html';
-  }
-});
-
-// =======================
-// INICIO
+// INICIAR CARGA
 // =======================
 loadCSV();
 </script>
