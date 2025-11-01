@@ -1,121 +1,69 @@
-// ===============================
-// Service Worker - Maestro Riopaila
-// Versión: v1.6.2  ⬅️ CORREGIDO
-// ===============================
-const CACHE_VERSION = 'v1.6.4';
+// ✅ service-worker.js
+// Versión actual — CAMBIA este número cada vez que actualices archivos en el repo
+const CACHE_VERSION = 'v1.6.3';
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 
-// Recursos que se guardan en caché (sin incluir el CSV)
+// ✅ Archivos a cachear
 const urlsToCache = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
+  '/',             // Página principal
+  '/index.html',
+  '/maestro.html',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/manifest.json'
+  // ❌ No incluyas el CSV, así siempre se carga fresco del servidor
 ];
 
-// ===============================
-// INSTALACIÓN
-// ===============================
+// ✅ Instalación
 self.addEventListener('install', event => {
-  console.log('[Service Worker] Instalando versión', CACHE_VERSION);
-  // ⬅️ CAMBIO: skipWaiting() INMEDIATAMENTE
-  self.skipWaiting();
+  console.log('Instalando nueva versión del SW:', CACHE_VERSION);
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('[Service Worker] Guardando recursos en caché');
-        return cache.addAll(urlsToCache);
-      })
-      .catch(err => console.error('[Service Worker] Error al cachear:', err))
+      .then(cache => cache.addAll(urlsToCache))
+      .then(() => self.skipWaiting())
   );
 });
 
-// ===============================
-// ACTIVACIÓN (limpiar cachés viejas)
-// ===============================
+// ✅ Activación — limpia versiones antiguas
 self.addEventListener('activate', event => {
-  console.log('[Service Worker] Activando versión', CACHE_VERSION);
+  console.log('Activando versión:', CACHE_VERSION);
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(name => {
           if (name !== CACHE_NAME) {
-            console.log('[Service Worker] Eliminando caché obsoleta:', name);
+            console.log('🧹 Eliminando caché antigua:', name);
             return caches.delete(name);
           }
         })
       );
-    }).then(() => {
-      console.log('[Service Worker] Tomando control de todas las páginas');
-      return self.clients.claim();
-    })
+    }).then(() => self.clients.claim())
   );
 });
 
-// ===============================
-// FETCH: Política de red
-// ===============================
+// ✅ Estrategia de red
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-  
-  // 👉 CSV SIEMPRE desde la red (no se guarda en caché)
+
+  // Para CSV siempre red primero (no usar caché)
   if (url.pathname.endsWith('.csv')) {
     event.respondWith(
-      fetch(event.request, { cache: 'no-store' })  // ⬅️ AÑADIDO: no-store
-        .then(response => {
-          console.log('[Service Worker] CSV cargado desde la red');
-          return response;
-        })
-        .catch(err => {
-          console.warn('[Service Worker] Error al cargar CSV:', err);
-          // Intentar caché como fallback
-          return caches.match(event.request);
-        })
+      fetch(event.request).catch(() => caches.match(event.request))
     );
     return;
   }
-  
-  // 👉 Otros recursos: Cache First con actualización en background
+
+  // Para los demás, cache-first con fallback
   event.respondWith(
-    caches.match(event.request).then(cachedResponse => {
-      // Si está en caché, devolverlo pero actualizar en background
-      if (cachedResponse) {
-        // Actualizar caché en background
-        fetch(event.request).then(response => {
-          if (response && response.status === 200) {
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(event.request, response);
-            });
-          }
-        }).catch(() => {});
-        
-        return cachedResponse;
-      }
-      
-      // Si no está en caché, traerlo de la red
-      return fetch(event.request).then(response => {
-        if (!response || response.status !== 200) {
-          return response;
-        }
-        
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseToCache);
-        });
-        
-        return response;
-      });
-    })
+    caches.match(event.request)
+      .then(response => response || fetch(event.request))
   );
 });
 
-// ===============================
-// MENSAJE: Activar nueva versión
-// ===============================
+// ✅ Permitir actualización inmediata
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
-    console.log('[Service Worker] Forzando actualización inmediata');
+    console.log('⚡ Activando nueva versión del SW inmediatamente...');
     self.skipWaiting();
   }
 });
