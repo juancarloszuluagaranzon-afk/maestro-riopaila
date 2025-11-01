@@ -1,206 +1,100 @@
-<!doctype html>
-<html lang="es">
+<!DOCTYPE html>
+<html class="dark" lang="es">
 <head>
-<meta charset="utf-8">
-<link rel="manifest" href="manifest.json">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Riopaila Agrícola – Maestro de Suertes</title>
-<style>
-:root{--bg:#f7fafc;--accent:#0ea5a4;--header-bg:#e9eef0}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:#0f172a}
-header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--header-bg);position:sticky;top:0;z-index:10}
-header img.logo{width:48px;height:48px;object-fit:contain}
-header .title{font-size:1.1rem;font-weight:700}
-header .update{font-size:0.85rem;color:#475569}
-.container{padding:16px}
-.controls{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;align-items:center}
-input,button{padding:8px;border-radius:8px;border:1px solid #e6e9ee}
-button.primary{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
-button.primary:hover{opacity:0.9}
-button.secondary{background:#64748b;color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:0.85rem}
-button.secondary:hover{opacity:0.9}
-.table-wrap{overflow-x:auto;background:#fff;border-radius:8px;padding:8px}
-table{border-collapse:collapse;width:100%;min-width:800px}
-th,td{padding:8px;border-bottom:1px solid #eef2f7;white-space:nowrap;text-align:left;font-size:13px}
-th{background:#fbfeff;position:sticky;top:0;font-weight:600}
-.loading{text-align:center;padding:40px;color:#64748b}
-.error{background:#fee;color:#c00;padding:12px;border-radius:8px;margin:16px}
-.update-banner{background:#fef3c7;border-left:4px solid #f59e0b;padding:12px;margin-bottom:16px;border-radius:4px}
-.update-banner button{margin-left:12px}
-@media (max-width:600px){input,button{padding:6px;font-size:14px} th,td{padding:6px;font-size:12px}}
-</style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Riopaila Agrícola - Maestro de Suertes</title>
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+    }
+    body { min-height: max(884px, 100dvh); }
+  </style>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#0ea4a2",
+            "background-light": "#f6f8f8",
+            "background-dark": "#102221",
+          },
+          fontFamily: { "display": ["Manrope", "sans-serif"] },
+          borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+        },
+      },
+    }
+  </script>
 </head>
-<body>
-<header>
-<img src="icon-192.png" class="logo" alt="logo" onerror="this.style.display='none'">
-<div>
-  <div class="title">Riopaila Agrícola – Maestro de Suertes</div>
-  <div class="update">Última actualización: 28 de octubre de 2025</div>
-</div>
-</header>
-<div class="container">
-  <div id="updateBanner" class="update-banner" style="display:none">
-    ⚠️ Hay una nueva versión disponible. 
-    <button class="secondary" onclick="updateApp()">Actualizar ahora</button>
+
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-800 dark:text-slate-200">
+  <div class="relative flex min-h-screen w-full flex-col items-center justify-center overflow-x-hidden p-4">
+    <!-- Main Content Area -->
+    <main class="flex w-full max-w-lg flex-col items-center justify-center text-center">
+      <!-- Logo -->
+      <div class="mb-6 h-24 w-24 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+        <div class="flex h-full w-full items-center justify-center bg-cover bg-center"
+          style='background-image: url("icon-192.png");'>
+        </div>
+      </div>
+
+      <!-- HeadlineText -->
+      <h1 class="text-slate-900 dark:text-white text-3xl sm:text-4xl font-bold tracking-tight">Riopaila Agrícola</h1>
+      <h2 class="mt-2 text-base sm:text-lg font-medium text-slate-600 dark:text-slate-400">
+        Maestro de Suertes · Transformación Digital
+      </h2>
+
+      <!-- Primary Button -->
+      <div class="mt-8 w-full max-w-xs">
+        <button 
+          onclick="window.location.href='maestro.html'"
+          class="flex w-full min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-primary text-white text-base font-bold leading-normal tracking-wide shadow-lg shadow-primary/20 transition-transform hover:scale-105"
+        >
+          <span class="truncate">Abrir Maestro</span>
+        </button>
+      </div>
+
+      <!-- Features -->
+      <div class="mt-12 grid w-full max-w-md grid-cols-3 gap-3 text-center sm:gap-4">
+        <div class="flex flex-col items-center gap-2 rounded-lg bg-white/50 dark:bg-black/20 p-4">
+          <span class="material-symbols-outlined text-primary text-3xl">bolt</span>
+          <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300">Rápido</h3>
+        </div>
+        <div class="flex flex-col items-center gap-2 rounded-lg bg-white/50 dark:bg-black/20 p-4">
+          <span class="material-symbols-outlined text-primary text-3xl">shield</span>
+          <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300">Seguro</h3>
+        </div>
+        <div class="flex flex-col items-center gap-2 rounded-lg bg-white/50 dark:bg-black/20 p-4">
+          <span class="material-symbols-outlined text-primary text-3xl">devices</span>
+          <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300">Adaptable</h3>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="absolute bottom-0 w-full p-4 text-center text-xs text-slate-500 dark:text-slate-500">
+      <div class="flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-4">
+        <p>© 2025 Riopaila Agrícola S.A.S.</p>
+        <div class="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+          v1.6.2
+        </div>
+      </div>
+    </footer>
   </div>
-  
-  <div class="controls">
-    <label>Buscar: <input id="searchInput" placeholder="Buscar..."></label>
-    <button id="downloadCsv" class="primary">Descargar CSV</button>
-    <button id="clearCache" class="secondary" title="Limpiar caché y recargar">🔄 Limpiar Caché</button>
-  </div>
-  <div id="loadingMsg" class="loading">Cargando datos...</div>
-  <div id="errorMsg" class="error" style="display:none"></div>
-  <div class="table-wrap" style="display:none"><table id="maestro"><thead></thead><tbody></tbody></table></div>
-  <div id="pagination" style="display:none;justify-content:center;align-items:center;gap:12px;margin:16px">
-    <button id="prevPage" class="primary">← Anterior</button>
-    <span id="pageInfo"></span>
-    <button id="nextPage" class="primary">Siguiente →</button>
-  </div>
-</div>
 
-<script>
-// =======================
-// CONFIGURACIÓN PRINCIPAL
-// =======================
-const APP_VERSION = 'v1.6.3'; // ⬅️ Incrementa este número en cada actualización
-const CSV_FILE = 'maestro.csv';
-
-let HEADERS = [];
-let ROWS = [];
-let currentPage = 1, pageSize = 25;
-let newWorkerWaiting = null;
-
-// =======================
-// REGISTRO DEL SERVICE WORKER
-// =======================
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js')
-    .then(reg => {
-      console.log('Service Worker registrado:', reg);
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            newWorkerWaiting = newWorker;
-            document.getElementById('updateBanner').style.display = 'block';
-          }
-        });
-      });
-    })
-    .catch(err => console.log('Service Worker no disponible:', err));
-
-  // 🔁 Nueva versión: recargar automáticamente
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    console.log('Nueva versión activada, recargando...');
-    setTimeout(() => {
-      const banner = document.getElementById('updateBanner');
-      if (banner) banner.style.display = 'none';
-      window.location.reload();
-    }, 1000);
-  });
-}
-
-function updateApp() {
-  if (newWorkerWaiting) newWorkerWaiting.postMessage({ type: 'SKIP_WAITING' });
-}
-
-// =======================
-// LIMPIAR CACHÉ MANUALMENTE
-// =======================
-async function clearCache() {
-  try {
-    if ('serviceWorker' in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      for (const reg of regs) await reg.unregister();
-    }
-    if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map(name => caches.delete(name)));
-    }
-    localStorage.clear();
-    alert('Caché limpiado. La página se recargará.');
-    window.location.reload(true);
-  } catch (err) {
-    console.error('Error al limpiar caché:', err);
-    alert('Error al limpiar caché. Intenta cerrar y abrir la app de nuevo.');
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(reg => console.log('Service Worker registrado:', reg.scope))
+      .catch(err => console.error('Error al registrar SW:', err));
   }
-}
-
-// =======================
-// CARGA DE CSV
-// =======================
-async function loadCSV() {
-  try {
-    const cacheBuster = Date.now();
-    const response = await fetch(`${CSV_FILE}?v=${cacheBuster}`, { cache: 'no-store' });
-    if (!response.ok) throw new Error(`No se pudo cargar el archivo CSV (${response.status})`);
-    const text = await response.text();
-
-    const lines = text.split('\n').filter(line => line.trim());
-    if (lines.length === 0) throw new Error('El CSV está vacío o mal formateado.');
-
-    const sep = lines[0].includes(';') ? ';' : ',';
-    HEADERS = lines[0].split(sep).map(h => h.trim());
-    ROWS = lines.slice(1).map(line => line.split(sep).map(v => v.trim()));
-    ROWS = ROWS.filter(row => row.some(cell => cell));
-
-    document.getElementById('loadingMsg').style.display = 'none';
-    document.querySelector('.table-wrap').style.display = 'block';
-    document.getElementById('pagination').style.display = 'flex';
-    renderTable();
-  } catch (error) {
-    document.getElementById('loadingMsg').style.display = 'none';
-    const errDiv = document.getElementById('errorMsg');
-    errDiv.style.display = 'block';
-    errDiv.innerHTML = `<strong>Error:</strong> ${error.message}<br><small>Verifica que el archivo <code>${CSV_FILE}</code> esté en el repositorio. Si el problema persiste, presiona "Limpiar Caché".</small>`;
-  }
-}
-
-// =======================
-// RENDER DE LA TABLA
-// =======================
-function renderTable() {
-  const tbody = document.querySelector('#maestro tbody');
-  const thead = document.querySelector('#maestro thead');
-  const search = document.getElementById('searchInput').value.toLowerCase();
-
-  const filtered = ROWS.filter(r => r.some(v => String(v||'').toLowerCase().includes(search)));
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  if (currentPage > totalPages) currentPage = totalPages;
-  const start = (currentPage - 1) * pageSize;
-  const pageRows = filtered.slice(start, start + pageSize);
-
-  thead.innerHTML = '<tr>' + HEADERS.map(h => `<th>${h}</th>`).join('') + '</tr>';
-  tbody.innerHTML = pageRows.map(r => '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('');
-  document.getElementById('pageInfo').innerText = `Página ${currentPage} / ${totalPages} (${filtered.length} registros)`;
-  document.getElementById('prevPage').disabled = currentPage <= 1;
-  document.getElementById('nextPage').disabled = currentPage >= totalPages;
-}
-
-// =======================
-// EVENTOS DE INTERFAZ
-// =======================
-document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; renderTable(); });
-document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderTable(); } });
-document.getElementById('nextPage').addEventListener('click', () => { if (currentPage < Math.ceil(ROWS.length / pageSize)) { currentPage++; renderTable(); } });
-document.getElementById('clearCache').addEventListener('click', clearCache);
-document.getElementById('downloadCsv').addEventListener('click', () => {
-  const sep = ',', lines = [HEADERS.join(sep)];
-  ROWS.forEach(r => lines.push(r.map(c => `"${String(c||'').replace(/"/g, '""')}"`).join(sep)));
-  const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'Maestro_Riopaila_' + new Date().toISOString().split('T')[0] + '.csv';
-  a.click();
-});
-
-// =======================
-// INICIAR CARGA
-// =======================
-loadCSV();
-</script>
+  </script>
 </body>
 </html>
-
-
