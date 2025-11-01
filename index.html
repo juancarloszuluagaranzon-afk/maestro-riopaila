@@ -96,5 +96,33 @@
       .catch(err => console.error('Error al registrar SW:', err));
   }
   </script>
+  <script>
+// 🔄 Registro inteligente del Service Worker con actualización automática
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+    .then(reg => {
+      console.log('✅ SW registrado correctamente:', reg.scope);
+
+      // Detecta nuevas versiones
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            console.log('💡 Nueva versión detectada. Actualizando...');
+            newWorker.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+    })
+    .catch(err => console.error('❌ Error registrando SW:', err));
+
+  // Cuando el nuevo SW toma el control, recarga la página automáticamente
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    console.log('🔁 Controlador cambiado: recargando...');
+    window.location.reload();
+  });
+}
+</script>
 </body>
 </html>
+
