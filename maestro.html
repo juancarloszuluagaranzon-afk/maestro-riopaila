@@ -1,4 +1,4 @@
-//<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
@@ -6,28 +6,129 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Riopaila Agrícola – Maestro de Suertes</title>
 <style>
-:root{--bg:#f7fafc;--accent:#0ea5a4;--header-bg:#e9eef0}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:#0f172a}
-header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--header-bg);position:sticky;top:0;z-index:10}
-header img.logo{width:48px;height:48px;object-fit:contain}
-header .title{font-size:1.1rem;font-weight:700}
-header .update{font-size:0.85rem;color:#475569}
-.container{padding:16px}
-.controls{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;align-items:center}
-input,button{padding:8px;border-radius:8px;border:1px solid #e6e9ee}
-button.primary{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
-button.primary:hover{opacity:0.9}
-button.secondary{background:#64748b;color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:0.85rem}
-button.secondary:hover{opacity:0.9}
-.table-wrap{overflow-x:auto;background:#fff;border-radius:8px;padding:8px}
-table{border-collapse:collapse;width:100%;min-width:800px}
-th,td{padding:8px;border-bottom:1px solid #eef2f7;white-space:nowrap;text-align:left;font-size:13px}
-th{background:#fbfeff;position:sticky;top:0;font-weight:600}
-.loading{text-align:center;padding:40px;color:#64748b}
-.error{background:#fee;color:#c00;padding:12px;border-radius:8px;margin:16px}
-.update-banner{background:#fef3c7;border-left:4px solid #f59e0b;padding:12px;margin-bottom:16px;border-radius:4px}
-.update-banner button{margin-left:12px}
-@media (max-width:600px){input,button{padding:6px;font-size:14px} th,td{padding:6px;font-size:12px}}
+:root {
+  --bg:#f7fafc;
+  --accent:#0ea5a4;
+  --header-bg:#e9eef0;
+}
+body {
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:var(--bg);
+  color:#0f172a;
+}
+header {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 16px;
+  background:var(--header-bg);
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+header a {
+  display:flex;
+  align-items:center;
+  text-decoration:none;
+}
+header img.logo {
+  width:48px;
+  height:48px;
+  object-fit:contain;
+  transition:transform 0.2s ease;
+}
+header img.logo:hover {
+  transform:scale(1.05);
+}
+header .title {
+  font-size:1.1rem;
+  font-weight:700;
+}
+header .update {
+  font-size:0.85rem;
+  color:#475569;
+}
+.container { padding:16px; }
+.controls {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:12px;
+  align-items:center;
+}
+input,button {
+  padding:8px;
+  border-radius:8px;
+  border:1px solid #e6e9ee;
+}
+button.primary {
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+}
+button.primary:hover { opacity:0.9; }
+button.secondary {
+  background:#64748b;
+  color:#fff;
+  border:none;
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:0.85rem;
+}
+button.secondary:hover { opacity:0.9; }
+.table-wrap {
+  overflow-x:auto;
+  background:#fff;
+  border-radius:8px;
+  padding:8px;
+}
+table {
+  border-collapse:collapse;
+  width:100%;
+  min-width:800px;
+}
+th,td {
+  padding:8px;
+  border-bottom:1px solid #eef2f7;
+  white-space:nowrap;
+  text-align:left;
+  font-size:13px;
+}
+th {
+  background:#fbfeff;
+  position:sticky;
+  top:0;
+  font-weight:600;
+}
+.loading {
+  text-align:center;
+  padding:40px;
+  color:#64748b;
+}
+.error {
+  background:#fee;
+  color:#c00;
+  padding:12px;
+  border-radius:8px;
+  margin:16px;
+}
+.update-banner {
+  background:#fef3c7;
+  border-left:4px solid #f59e0b;
+  padding:12px;
+  margin-bottom:16px;
+  border-radius:4px;
+}
+.update-banner button { margin-left:12px; }
+@media (max-width:600px) {
+  input,button { padding:6px; font-size:14px; }
+  th,td { padding:6px; font-size:12px; }
+}
 </style>
 </head>
 <body>
@@ -40,20 +141,24 @@ th{background:#fbfeff;position:sticky;top:0;font-weight:600}
     <div class="update">Última actualización: 28 de octubre de 2025</div>
   </div>
 </header>
+
 <div class="container">
   <div id="updateBanner" class="update-banner" style="display:none">
-    ⚠️ Hay una nueva versión disponible. 
+    ⚠️ Hay una nueva versión disponible.
     <button class="secondary" onclick="updateApp()">Actualizar ahora</button>
   </div>
-  
+
   <div class="controls">
     <label>Buscar: <input id="searchInput" placeholder="Buscar..."></label>
     <button id="downloadCsv" class="primary">Descargar CSV</button>
     <button id="clearCache" class="secondary" title="Limpiar caché y recargar">🔄 Limpiar Caché</button>
   </div>
+
   <div id="loadingMsg" class="loading">Cargando datos...</div>
   <div id="errorMsg" class="error" style="display:none"></div>
-  <div class="table-wrap" style="display:none"><table id="maestro"><thead></thead><tbody></tbody></table></div>
+  <div class="table-wrap" style="display:none">
+    <table id="maestro"><thead></thead><tbody></tbody></table>
+  </div>
   <div id="pagination" style="display:none;justify-content:center;align-items:center;gap:12px;margin:16px">
     <button id="prevPage" class="primary">← Anterior</button>
     <span id="pageInfo"></span>
@@ -65,11 +170,9 @@ th{background:#fbfeff;position:sticky;top:0;font-weight:600}
 // =======================
 // CONFIGURACIÓN PRINCIPAL
 // =======================
-const APP_VERSION = 'v1.7.1'; // ⬅️ Incrementa este número en cada actualización
+const APP_VERSION = 'v1.7.2'; // ⬅️ Incrementa este número en cada actualización
 const CSV_FILE = 'maestro.csv';
-
-let HEADERS = [];
-let ROWS = [];
+let HEADERS = [], ROWS = [];
 let currentPage = 1, pageSize = 25;
 let newWorkerWaiting = null;
 
@@ -92,14 +195,13 @@ if ('serviceWorker' in navigator) {
     })
     .catch(err => console.log('Service Worker no disponible:', err));
 
-  // 🔁 Nueva versión: recargar automáticamente
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     console.log('Nueva versión activada, recargando...');
     setTimeout(() => {
       const banner = document.getElementById('updateBanner');
       if (banner) banner.style.display = 'none';
       window.location.reload();
-    }, 1000);
+    }, 800);
   });
 }
 
@@ -108,7 +210,7 @@ function updateApp() {
 }
 
 // =======================
-// LIMPIAR CACHÉ MANUALMENTE
+// LIMPIAR CACHÉ MANUAL
 // =======================
 async function clearCache() {
   try {
@@ -130,22 +232,19 @@ async function clearCache() {
 }
 
 // =======================
-// CARGA DE CSV
+// CARGAR CSV (sin caché)
 // =======================
 async function loadCSV() {
   try {
-    const cacheBuster = Date.now();
-    const response = await fetch(`${CSV_FILE}?v=${cacheBuster}`, { cache: 'no-store' });
+    const response = await fetch(`${CSV_FILE}?v=${Date.now()}`, { cache: 'no-store' });
     if (!response.ok) throw new Error(`No se pudo cargar el archivo CSV (${response.status})`);
     const text = await response.text();
-
     const lines = text.split('\n').filter(line => line.trim());
     if (lines.length === 0) throw new Error('El CSV está vacío o mal formateado.');
 
     const sep = lines[0].includes(';') ? ';' : ',';
     HEADERS = lines[0].split(sep).map(h => h.trim());
-    ROWS = lines.slice(1).map(line => line.split(sep).map(v => v.trim()));
-    ROWS = ROWS.filter(row => row.some(cell => cell));
+    ROWS = lines.slice(1).map(line => line.split(sep).map(v => v.trim())).filter(row => row.some(cell => cell));
 
     document.getElementById('loadingMsg').style.display = 'none';
     document.querySelector('.table-wrap').style.display = 'block';
@@ -155,12 +254,12 @@ async function loadCSV() {
     document.getElementById('loadingMsg').style.display = 'none';
     const errDiv = document.getElementById('errorMsg');
     errDiv.style.display = 'block';
-    errDiv.innerHTML = `<strong>Error:</strong> ${error.message}<br><small>Verifica que el archivo <code>${CSV_FILE}</code> esté en el repositorio. Si el problema persiste, presiona "Limpiar Caché".</small>`;
+    errDiv.innerHTML = `<strong>Error:</strong> ${error.message}<br><small>Verifica que el archivo <code>${CSV_FILE}</code> esté en el repositorio.</small>`;
   }
 }
 
 // =======================
-// RENDER DE LA TABLA
+// RENDER TABLA
 // =======================
 function renderTable() {
   const tbody = document.querySelector('#maestro tbody');
@@ -181,7 +280,7 @@ function renderTable() {
 }
 
 // =======================
-// EVENTOS DE INTERFAZ
+// EVENTOS
 // =======================
 document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; renderTable(); });
 document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderTable(); } });
@@ -198,7 +297,22 @@ document.getElementById('downloadCsv').addEventListener('click', () => {
 });
 
 // =======================
-// INICIAR CARGA
+// REDIRECCIÓN DEL LOGO (modo offline seguro)
+// =======================
+document.querySelector('header a').addEventListener('click', async (e) => {
+  e.preventDefault();
+  try {
+    const cache = await caches.open('riopaila-maestro-v1.7.2');
+    const cached = await cache.match('index.html');
+    if (cached) window.location.href = 'index.html';
+    else window.location.href = 'index.html';
+  } catch {
+    window.location.href = 'index.html';
+  }
+});
+
+// =======================
+// INICIO
 // =======================
 loadCSV();
 </script>
