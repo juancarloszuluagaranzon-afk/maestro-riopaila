@@ -1,6 +1,6 @@
 // ✅ service-worker.js
 // Versión actual — CAMBIA este número cada vez que actualices archivos en el repo
-const CACHE_VERSION = 'v1.7.1';
+const CACHE_VERSION = 'v1.7.2';
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 
 // ✅ Archivos a cachear
