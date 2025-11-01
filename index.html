@@ -1,128 +1,114 @@
-<!DOCTYPE html>
-<html class="dark" lang="es">
+<!doctype html>
+<html lang="es" class="dark">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Riopaila Agrícola - Maestro de Suertes</title>
-  <link rel="manifest" href="manifest.json">
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-  <style>
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
-    }
-    body { min-height: max(884px, 100dvh); }
-  </style>
-  <script id="tailwind-config">
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "primary": "#0ea4a2",
-            "background-light": "#f6f8f8",
-            "background-dark": "#102221",
-          },
-          fontFamily: { "display": ["Manrope", "sans-serif"] },
-          borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
-        },
-      },
-    }
-  </script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json">
+<title>Riopaila Agrícola</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+<style>
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+}
+body {
+  min-height: max(884px, 100dvh);
+  font-family: 'Manrope', sans-serif;
+}
+</style>
 </head>
 
-<body class="bg-background-light dark:bg-background-dark font-display text-slate-800 dark:text-slate-200">
-  <div class="relative flex min-h-screen w-full flex-col items-center justify-center overflow-x-hidden p-4">
-    <!-- Main Content Area -->
-    <main class="flex w-full max-w-lg flex-col items-center justify-center text-center">
-      <!-- Logo -->
-      <div class="mb-6 h-24 w-24 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-        <div class="flex h-full w-full items-center justify-center bg-cover bg-center"
-          style='background-image: url("icon-192.png");'>
-        </div>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center min-h-screen p-6 relative overflow-hidden">
+  <!-- Fondo decorativo -->
+  <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-teal-50 via-white to-slate-100 dark:from-slate-800 dark:via-slate-900 dark:to-black -z-10"></div>
+
+  <!-- Contenedor principal -->
+  <main class="w-full max-w-lg text-center bg-white dark:bg-slate-800/70 backdrop-blur-lg rounded-2xl shadow-xl p-10 border border-slate-200 dark:border-slate-700 relative">
+    
+    <!-- Logo -->
+    <div class="flex justify-center mb-6">
+      <div class="w-28 h-28 rounded-full bg-gradient-to-tr from-teal-500 to-teal-300 flex items-center justify-center shadow-lg animate-pulse-slow">
+        <img src="icon-192.png" alt="Riopaila Agrícola" class="w-16 h-16">
       </div>
+    </div>
 
-      <!-- HeadlineText -->
-      <h1 class="text-slate-900 dark:text-white text-3xl sm:text-4xl font-bold tracking-tight">Riopaila Agrícola</h1>
-      <h2 class="mt-2 text-base sm:text-lg font-medium text-slate-600 dark:text-slate-400">
-        Maestro de Suertes · Transformación Digital
-      </h2>
+    <h1 class="text-3xl font-extrabold tracking-tight mb-2 text-slate-900 dark:text-white">Riopaila Agrícola</h1>
+    <h2 class="text-lg font-medium text-slate-600 dark:text-slate-300 mb-3">Maestro de Suertes · Transformación Digital</h2>
+    <span class="inline-block bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300 px-4 py-1 rounded-full text-sm font-semibold mb-8">🌱 Innovando el campo</span>
 
-      <!-- Primary Button -->
-      <div class="mt-8 w-full max-w-xs">
-        <button 
-          onclick="window.location.href='maestro.html'"
-          class="flex w-full min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-primary text-white text-base font-bold leading-normal tracking-wide shadow-lg shadow-primary/20 transition-transform hover:scale-105"
-        >
-          <span class="truncate">Abrir Maestro</span>
-        </button>
+    <!-- Botones principales -->
+    <div class="flex flex-col gap-4">
+      <button onclick="window.location.href='maestro.html'" class="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-400 hover:from-teal-500 hover:to-teal-300 text-white font-bold rounded-lg shadow-md transition-transform hover:scale-[1.02]">
+        📋 Abrir Maestro
+      </button>
+
+      <button onclick="clearCache()" class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg shadow transition-transform hover:scale-[1.02]">
+        🔄 Limpiar Caché
+      </button>
+    </div>
+
+    <!-- Características -->
+    <div class="mt-10 grid grid-cols-3 gap-4 text-center">
+      <div class="flex flex-col items-center gap-2">
+        <span class="material-symbols-outlined text-teal-500 text-3xl">bolt</span>
+        <p class="text-sm font-semibold">Rápido</p>
       </div>
-
-      <!-- Features -->
-      <div class="mt-12 grid w-full max-w-md grid-cols-3 gap-3 text-center sm:gap-4">
-        <div class="flex flex-col items-center gap-2 rounded-lg bg-white/50 dark:bg-black/20 p-4">
-          <span class="material-symbols-outlined text-primary text-3xl">bolt</span>
-          <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300">Rápido</h3>
-        </div>
-        <div class="flex flex-col items-center gap-2 rounded-lg bg-white/50 dark:bg-black/20 p-4">
-          <span class="material-symbols-outlined text-primary text-3xl">shield</span>
-          <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300">Seguro</h3>
-        </div>
-        <div class="flex flex-col items-center gap-2 rounded-lg bg-white/50 dark:bg-black/20 p-4">
-          <span class="material-symbols-outlined text-primary text-3xl">devices</span>
-          <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300">Adaptable</h3>
-        </div>
+      <div class="flex flex-col items-center gap-2">
+        <span class="material-symbols-outlined text-teal-500 text-3xl">shield</span>
+        <p class="text-sm font-semibold">Seguro</p>
       </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="absolute bottom-0 w-full p-4 text-center text-xs text-slate-500 dark:text-slate-500">
-      <div class="flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-4">
-        <p>© 2025 Riopaila Agrícola S.A.S.</p>
-        <div class="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-          v1.6.2
-        </div>
+      <div class="flex flex-col items-center gap-2">
+        <span class="material-symbols-outlined text-teal-500 text-3xl">devices</span>
+        <p class="text-sm font-semibold">Adaptable</p>
       </div>
-    </footer>
-  </div>
+    </div>
+  </main>
 
+  <!-- Footer -->
+  <footer class="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
+    © 2025 Riopaila Agrícola S.A.S. — <span class="font-semibold text-teal-500">v1.7.2</span>
+  </footer>
+
+  <!-- Service Worker + Clear Cache -->
   <script>
+  // Registrar Service Worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js')
-      .then(reg => console.log('Service Worker registrado:', reg.scope))
-      .catch(err => console.error('Error al registrar SW:', err));
+      .then(() => console.log('Service Worker registrado'))
+      .catch(err => console.warn('Error registrando SW:', err));
+  }
+
+  // Función para limpiar caché y recargar
+  async function clearCache() {
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const reg of regs) await reg.unregister();
+      }
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+      localStorage.clear();
+      alert('✅ Caché limpiado correctamente. La aplicación se recargará.');
+      window.location.reload(true);
+    } catch (err) {
+      console.error('Error al limpiar caché:', err);
+      alert('❌ Error al limpiar caché. Intenta cerrar y abrir la app nuevamente.');
+    }
   }
   </script>
-  <script>
-// 🔄 Registro inteligente del Service Worker con actualización automática
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js')
-    .then(reg => {
-      console.log('✅ SW registrado correctamente:', reg.scope);
 
-      // Detecta nuevas versiones
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('💡 Nueva versión detectada. Actualizando...');
-            newWorker.postMessage({ type: 'SKIP_WAITING' });
-          }
-        });
-      });
-    })
-    .catch(err => console.error('❌ Error registrando SW:', err));
-
-  // Cuando el nuevo SW toma el control, recarga la página automáticamente
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    console.log('🔁 Controlador cambiado: recargando...');
-    window.location.reload();
-  });
-}
-</script>
+  <!-- Animación lenta de pulso -->
+  <style>
+  @keyframes pulse-slow {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.9; }
+  }
+  .animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
+  </style>
 </body>
 </html>
-
