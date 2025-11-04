@@ -88,18 +88,21 @@ body {
 // ==============================
 // 🔧 Registro mejorado del Service Worker
 // ==============================
+<script>
+// ==============================
+// 🔧 Registro del Service Worker con autoactualización
+// ==============================
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('service-worker.js')
     .then(reg => {
       console.log('[Service Worker] Registrado correctamente:', reg.scope);
 
-      // Detectar nuevas versiones del Service Worker
+      // Detectar nuevas versiones
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('⚡ Nueva versión disponible. Actualizando...');
-            // Activar inmediatamente el nuevo SW
+            console.log('⚡ Nueva versión disponible, actualizando...');
             newWorker.postMessage({ type: 'SKIP_WAITING' });
           }
         });
@@ -107,9 +110,9 @@ if ('serviceWorker' in navigator) {
     })
     .catch(err => console.error('[Service Worker] Error al registrar:', err));
 
-  // Recargar automáticamente cuando el nuevo SW toma control
+  // Recargar cuando el nuevo SW toma control
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    console.log('[Service Worker] Nueva versión activada. Recargando página...');
+    console.log('[Service Worker] Nueva versión activada, recargando...');
     window.location.reload();
   });
 }
@@ -120,23 +123,20 @@ if ('serviceWorker' in navigator) {
 async function clearCache() {
   try {
     console.log('🧹 Limpiando caché...');
-    
     if ('serviceWorker' in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
       for (const reg of regs) {
         await reg.unregister();
-        console.log('🗑️ Service Worker eliminado:', reg.scope);
+        console.log('🗑️ SW eliminado:', reg.scope);
       }
     }
-
     if ('caches' in window) {
       const cacheNames = await caches.keys();
       await Promise.all(cacheNames.map(name => caches.delete(name)));
       console.log('🧾 Cachés eliminadas:', cacheNames);
     }
-
     localStorage.clear();
-    alert('✅ Caché limpiado correctamente. La aplicación se recargará.');
+    alert('✅ Caché limpiado. La aplicación se recargará.');
     window.location.reload(true);
   } catch (err) {
     console.error('❌ Error al limpiar caché:', err);
@@ -155,4 +155,5 @@ async function clearCache() {
   </style>
 </body>
 </html>
+
 
