@@ -8,7 +8,8 @@ const urlsToCache = [
   '/maestro.html',
   '/manifest.json',
   '/icon-192.png',
-  '/icon-512.png'
+  '/icon-512.png',
+  '/service-worker.js'
 ];
 
 // 📦 Instalar y guardar en caché los archivos esenciales
