@@ -18,6 +18,11 @@ body {
   min-height: max(884px, 100dvh);
   font-family: 'Manrope', sans-serif;
 }
+@keyframes pulse-slow {
+  0%,100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.9; }
+}
+.animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
 </style>
 </head>
 
@@ -74,35 +79,20 @@ body {
 
   <!-- Service Worker + Clear Cache -->
   <script>
-  // Registrar Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js')
-      .then(() => console.log('Service Worker registrado'))
-      .catch(err => console.warn('Error registrando SW:', err));
-  }
-
-  // Función para limpiar caché y recargar
-  async function clearCache() {
-    try {
-      <script>
 // ==============================
-// 🔧 Registro mejorado del Service Worker
-// ==============================
-<script>
-// ==============================
-// 🔧 Registro del Service Worker con autoactualización
+// 🔧 Registro del Service Worker con actualización automática
 // ==============================
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('service-worker.js')
     .then(reg => {
       console.log('[Service Worker] Registrado correctamente:', reg.scope);
 
-      // Detectar nuevas versiones
+      // Detectar nuevas versiones del SW
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('⚡ Nueva versión disponible, actualizando...');
+            console.log('⚡ Nueva versión disponible. Activando...');
             newWorker.postMessage({ type: 'SKIP_WAITING' });
           }
         });
@@ -110,7 +100,7 @@ if ('serviceWorker' in navigator) {
     })
     .catch(err => console.error('[Service Worker] Error al registrar:', err));
 
-  // Recargar cuando el nuevo SW toma control
+  // Recargar automáticamente al activar nuevo SW
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     console.log('[Service Worker] Nueva versión activada, recargando...');
     window.location.reload();
@@ -123,37 +113,31 @@ if ('serviceWorker' in navigator) {
 async function clearCache() {
   try {
     console.log('🧹 Limpiando caché...');
+    
+    // Eliminar Service Workers
     if ('serviceWorker' in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
       for (const reg of regs) {
         await reg.unregister();
-        console.log('🗑️ SW eliminado:', reg.scope);
+        console.log('🗑️ Service Worker eliminado:', reg.scope);
       }
     }
+
+    // Eliminar cachés
     if ('caches' in window) {
       const cacheNames = await caches.keys();
       await Promise.all(cacheNames.map(name => caches.delete(name)));
       console.log('🧾 Cachés eliminadas:', cacheNames);
     }
+
     localStorage.clear();
-    alert('✅ Caché limpiado. La aplicación se recargará.');
+    alert('✅ Caché limpiado correctamente. La aplicación se recargará.');
     window.location.reload(true);
   } catch (err) {
     console.error('❌ Error al limpiar caché:', err);
     alert('⚠️ Error al limpiar caché. Intenta cerrar y abrir la app nuevamente.');
   }
 }
-</script>
-
-  <!-- Animación lenta de pulso -->
-  <style>
-  @keyframes pulse-slow {
-    0%,100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.05); opacity: 0.9; }
-  }
-  .animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
-  </style>
+  </script>
 </body>
 </html>
-
-
