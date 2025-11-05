@@ -1,13 +1,16 @@
-const CACHE_VERSION = 'v1.7.3';
+const CACHE_VERSION = 'v1.7.4';
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 
-const BASE = '/maestro-riopaila/'; // 👈 IMPORTANTÍSIMO
+// ⚠️ Ajusta según tu estructura de carpetas
+// Si está en raíz: const BASE = '/';
+// Si está en subdirectorio: const BASE = '/maestro-riopaila/';
+const BASE = '/'; 
 
 const urlsToCache = [
   BASE,
   BASE + 'index.html',
   BASE + 'maestro.html',
-  BASE + 'maestro.csv', // ✅ GUARDAR CSV EN CACHE PARA USO OFFLINE
+  BASE + 'maestro.csv',
   BASE + 'manifest.json',
   BASE + 'icon-192.png',
   BASE + 'icon-512.png',
@@ -15,51 +18,85 @@ const urlsToCache = [
 
 // Instalar
 self.addEventListener('install', event => {
+  console.log('[SW] Instalando versión', CACHE_VERSION);
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+      .then(cache => {
+        console.log('[SW] Cacheando archivos:', urlsToCache);
+        return cache.addAll(urlsToCache);
+      })
       .then(() => self.skipWaiting())
+      .catch(err => console.error('[SW] Error al cachear:', err))
   );
 });
 
 // Activar
 self.addEventListener('activate', event => {
+  console.log('[SW] Activando versión', CACHE_VERSION);
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.map(key => key !== CACHE_NAME ? caches.delete(key) : null))
-    ).then(() => self.clients.claim())
+    caches.keys().then(keys => {
+      return Promise.all(
+        keys.map(key => {
+          if (key !== CACHE_NAME) {
+            console.log('[SW] Eliminando caché antigua:', key);
+            return caches.delete(key);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
   );
 });
 
 // Fetch
 self.addEventListener('fetch', event => {
   const request = event.request;
+  const url = new URL(request.url);
 
-  // CSV: Network first
-  if (request.url.endsWith('.csv')) {
+  // Ignorar requests externos
+  if (url.origin !== location.origin) return;
+
+  // CSV: Cache first con revalidación en background
+  if (request.url.includes('.csv')) {
     event.respondWith(
-      fetch(request).then(response => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
-        return response;
-      }).catch(() => caches.match(request))
+      caches.match(request).then(cachedResponse => {
+        const fetchPromise = fetch(request).then(networkResponse => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+          }
+          return networkResponse;
+        }).catch(() => null);
+
+        // Devolver caché inmediatamente, actualizar en background
+        return cachedResponse || fetchPromise || Promise.reject('Sin conexión y sin caché');
+      })
     );
     return;
   }
 
   // Resto: Cache first
   event.respondWith(
-    caches.match(request).then(response =>
-      response || fetch(request).then(networkRes => {
-        const clone = networkRes.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+    caches.match(request).then(response => {
+      if (response) {
+        console.log('[SW] Sirviendo desde caché:', request.url);
+        return response;
+      }
+      
+      return fetch(request).then(networkRes => {
+        if (networkRes && networkRes.status === 200) {
+          const clone = networkRes.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+        }
         return networkRes;
-      })
-    )
+      });
+    })
   );
 });
 
 // Actualizar inmediatamente
 self.addEventListener('message', event => {
-  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data?.type === 'SKIP_WAITING') {
+    console.log('[SW] Activación forzada');
+    self.skipWaiting();
+  }
 });
