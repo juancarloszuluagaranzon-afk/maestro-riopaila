@@ -7,6 +7,7 @@ const urlsToCache = [
   BASE,
   BASE + 'index.html',
   BASE + 'maestro.html',
+  BASE + 'maestro.csv', // ✅ GUARDAR CSV EN CACHE PARA USO OFFLINE
   BASE + 'manifest.json',
   BASE + 'icon-192.png',
   BASE + 'icon-512.png',
