@@ -101,7 +101,14 @@ th {
   margin-bottom:16px;
   border-radius:4px;
 }
-.update-banner button {
+.offline-banner {
+  background:#f0f9ff;
+  border-left:4px solid #0ea5e9;
+  padding:12px;
+  margin-bottom:16px;
+  border-radius:4px;
+}
+.update-banner button, .error button {
   margin-left:12px;
   background:var(--accent);
   color:white;
@@ -110,7 +117,7 @@ th {
   border-radius:6px;
   cursor:pointer;
 }
-.update-banner button:hover {
+.update-banner button:hover, .error button:hover {
   opacity:0.9;
 }
 @media (max-width:600px) {
@@ -142,6 +149,10 @@ th {
     <button onclick="updateApp()">Actualizar ahora</button>
   </div>
 
+  <div id="offlineBanner" class="offline-banner" style="display:none">
+    📡 <strong>Modo offline:</strong> Mostrando datos en caché. Algunos datos pueden no estar actualizados.
+  </div>
+
   <div class="controls">
     <label>Buscar: <input id="searchInput" placeholder="Buscar..."></label>
   </div>
@@ -169,6 +180,7 @@ th {
 // =======================
 const APP_VERSION = 'v1.7.6'; // ✅ Incrementa este número en cada actualización
 const CSV_FILE = 'maestro.csv';
+const CACHE_NAME = 'riopaila-maestro-v1.7.5'; // Debe coincidir con service-worker.js
 let HEADERS = [], ROWS = [];
 let currentPage = 1, pageSize = 25;
 let newWorkerWaiting = null;
@@ -204,38 +216,76 @@ function updateApp() {
 }
 
 // =======================
-// CARGA DEL CSV (Network-first + fallback offline)
+// CARGA DEL CSV (Network-first + fallback offline MEJORADO)
 // =======================
 async function loadCSV() {
   try {
+    console.log('[CSV] Intentando cargar desde red...');
     const cacheBuster = Date.now();
-    const response = await fetch(`${CSV_FILE}?v=${cacheBuster}`, { cache: 'no-store' });
-    if (!response.ok) throw new Error(`No se pudo cargar el archivo CSV (${response.status})`);
+    const response = await fetch(`${CSV_FILE}?v=${cacheBuster}`, { 
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    });
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
     const text = await response.text();
+    if (!text || text.trim().length === 0) {
+      throw new Error('CSV vacío o inválido');
+    }
+    
     parseCSV(text);
-    console.log('[CSV] Cargado desde red');
+    console.log('[CSV] Cargado desde red correctamente');
+    document.getElementById('offlineBanner').style.display = 'none';
+    
   } catch (error) {
-    console.warn('[CSV] No se pudo obtener desde red, intentando caché...');
+    console.warn('[CSV] Error desde red:', error.message, '- Intentando caché...');
+    
     try {
+      // Intentar desde caché del Service Worker
       const cached = await caches.match(CSV_FILE);
       if (cached) {
         const text = await cached.text();
-        parseCSV(text);
-        console.log('[CSV] Cargado desde caché');
-      } else {
-        throw new Error('Sin conexión y sin datos en caché.');
+        if (text && text.trim().length > 0) {
+          parseCSV(text);
+          console.log('[CSV] Cargado desde caché correctamente');
+          // Mostrar advertencia de que son datos antiguos
+          document.getElementById('offlineBanner').style.display = 'block';
+          return;
+        }
       }
+      
+      // Si no hay caché válida
+      throw new Error('Sin conexión y sin datos en caché.');
+      
     } catch (err) {
-      document.getElementById('loadingMsg').style.display = 'none';
-      const errDiv = document.getElementById('errorMsg');
-      errDiv.style.display = 'block';
-      errDiv.innerHTML = `<strong>Error:</strong> ${err.message}<br><small>Verifica tu conexión o actualiza la aplicación.</small>`;
+      console.error('[CSV] Error crítico:', err);
+      showError(err.message);
     }
   }
 }
 
+function showError(message) {
+  document.getElementById('loadingMsg').style.display = 'none';
+  const errDiv = document.getElementById('errorMsg');
+  errDiv.style.display = 'block';
+  errDiv.innerHTML = `
+    <strong>Error:</strong> ${message}<br>
+    <small>Verifica tu conexión a internet o contacta al administrador.</small>
+    <br><br>
+    <button onclick="location.reload()">Reintentar</button>
+    <button onclick="clearCacheAndReload()" style="margin-left: 8px; background: #64748b;">Limpiar Caché</button>
+  `;
+}
+
 function parseCSV(text) {
   const lines = text.split('\n').filter(line => line.trim());
+  if (lines.length === 0) {
+    throw new Error('El archivo CSV está vacío');
+  }
+  
   const sep = lines[0].includes(';') ? ';' : ',';
   HEADERS = lines[0].split(sep).map(h => h.trim());
   ROWS = lines.slice(1).map(line => line.split(sep).map(v => v.trim()))
@@ -271,14 +321,95 @@ function renderTable() {
 // =======================
 // EVENTOS DE INTERFAZ
 // =======================
-document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; renderTable(); });
-document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderTable(); } });
-document.getElementById('nextPage').addEventListener('click', () => { if (currentPage < Math.ceil(ROWS.length / pageSize)) { currentPage++; renderTable(); } });
+document.getElementById('searchInput').addEventListener('input', () => { 
+  currentPage = 1; 
+  renderTable(); 
+});
+
+document.getElementById('prevPage').addEventListener('click', () => { 
+  if (currentPage > 1) { 
+    currentPage--; 
+    renderTable(); 
+  } 
+});
+
+document.getElementById('nextPage').addEventListener('click', () => { 
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = ROWS.filter(r => r.some(v => String(v||'').toLowerCase().includes(search)));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  
+  if (currentPage < totalPages) { 
+    currentPage++; 
+    renderTable(); 
+  } 
+});
+
+// =======================
+// FUNCIONES UTILITARIAS
+// =======================
+async function clearCacheAndReload() {
+  try {
+    console.log('🧹 Limpiando caché...');
+    
+    // Eliminar Service Workers
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) {
+        await reg.unregister();
+        console.log('🗑️ Service Worker eliminado:', reg.scope);
+      }
+    }
+
+    // Eliminar cachés
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(name => caches.delete(name)));
+      console.log('🧾 Cachés eliminadas:', cacheNames);
+    }
+
+    localStorage.clear();
+    alert('✅ Caché limpiado correctamente. La aplicación se recargará.');
+    window.location.reload(true);
+  } catch (err) {
+    console.error('❌ Error al limpiar caché:', err);
+    alert('⚠️ Error al limpiar caché. Intenta cerrar y abrir la app nuevamente.');
+  }
+}
+
+// =======================
+// VERIFICACIÓN DE INSTALACIÓN
+// =======================
+async function verifyInstallation() {
+  console.log('🔍 Verificando instalación...');
+  
+  // Verificar si el CSV está en caché
+  try {
+    const cacheNames = await caches.keys();
+    console.log('📂 Cachés disponibles:', cacheNames);
+    
+    for (const cacheName of cacheNames) {
+      const cache = await caches.open(cacheName);
+      const keys = await cache.keys();
+      const csvCached = keys.some(req => req.url.includes('maestro.csv'));
+      
+      if (csvCached) {
+        console.log('✅ CSV encontrado en caché:', cacheName);
+        console.log('🗂️ Archivos en caché:', keys.map(k => new URL(k.url).pathname));
+        break;
+      }
+    }
+  } catch (err) {
+    console.error('❌ Error verificando caché:', err);
+  }
+}
 
 // =======================
 // INICIAR
 // =======================
 loadCSV();
+
+// Ejecutar verificación después de cargar
+setTimeout(verifyInstallation, 2000);
 </script>
 </body>
 </html>
