@@ -178,9 +178,9 @@ th {
 // =======================
 // CONFIGURACIÓN PRINCIPAL
 // =======================
-const APP_VERSION = 'v1.7.6'; // ✅ Incrementa este número en cada actualización
+const APP_VERSION = 'v1.7.6';
 const CSV_FILE = 'maestro.csv';
-const CACHE_NAME = 'riopaila-maestro-v1.7.5'; // Debe coincidir con service-worker.js
+const CACHE_NAME = 'riopaila-maestro-v1.7.6';
 let HEADERS = [], ROWS = [];
 let currentPage = 1, pageSize = 25;
 let newWorkerWaiting = null;
@@ -216,18 +216,26 @@ function updateApp() {
 }
 
 // =======================
-// CARGA DEL CSV (Network-first + fallback offline MEJORADO)
+// CARGA DEL CSV - ESTRATEGIA MEJORADA
 // =======================
 async function loadCSV() {
+  // Mostrar que estamos intentando cargar
+  document.getElementById('loadingMsg').innerHTML = 
+    'Cargando datos...<br><small>Verificando conexión y caché</small>';
+
   try {
-    console.log('[CSV] Intentando cargar desde red...');
-    const cacheBuster = Date.now();
-    const response = await fetch(`${CSV_FILE}?v=${cacheBuster}`, { 
+    console.log('[CSV] 🔄 Intentando cargar desde red...');
+    
+    // Intentar con timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    const response = await fetch(`${CSV_FILE}?v=${Date.now()}`, {
       cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-cache'
-      }
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
     
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     
@@ -237,31 +245,62 @@ async function loadCSV() {
     }
     
     parseCSV(text);
-    console.log('[CSV] Cargado desde red correctamente');
+    console.log('[CSV] ✅ Cargado desde red correctamente');
     document.getElementById('offlineBanner').style.display = 'none';
     
   } catch (error) {
-    console.warn('[CSV] Error desde red:', error.message, '- Intentando caché...');
+    console.warn('[CSV] 🌐 Red falló:', error.message, '- Buscando en caché...');
     
     try {
-      // Intentar desde caché del Service Worker
-      const cached = await caches.match(CSV_FILE);
+      // Buscar en caché de forma más agresiva
+      let cached = await caches.match(CSV_FILE);
+      
+      // Si no encontramos, intentar con diferentes URLs
+      if (!cached) {
+        cached = await caches.match('/maestro.csv');
+      }
+      if (!cached) {
+        cached = await caches.match('./maestro.csv');
+      }
+      
       if (cached) {
         const text = await cached.text();
         if (text && text.trim().length > 0) {
           parseCSV(text);
-          console.log('[CSV] Cargado desde caché correctamente');
-          // Mostrar advertencia de que son datos antiguos
+          console.log('[CSV] ✅ Cargado desde caché correctamente');
           document.getElementById('offlineBanner').style.display = 'block';
           return;
         }
       }
       
-      // Si no hay caché válida
+      // Último intento: buscar en cualquier caché
+      const cacheNames = await caches.keys();
+      for (const cacheName of cacheNames) {
+        const cache = await caches.open(cacheName);
+        const keys = await cache.keys();
+        const csvRequest = keys.find(req => 
+          req.url.includes('maestro.csv') || 
+          req.url.endsWith('/maestro.csv')
+        );
+        
+        if (csvRequest) {
+          const cached = await cache.match(csvRequest);
+          if (cached) {
+            const text = await cached.text();
+            if (text && text.trim().length > 0) {
+              parseCSV(text);
+              console.log('[CSV] ✅ Cargado desde caché alternativa:', cacheName);
+              document.getElementById('offlineBanner').style.display = 'block';
+              return;
+            }
+          }
+        }
+      }
+      
       throw new Error('Sin conexión y sin datos en caché.');
       
     } catch (err) {
-      console.error('[CSV] Error crítico:', err);
+      console.error('[CSV] ❌ Error crítico:', err);
       showError(err.message);
     }
   }
@@ -404,12 +443,68 @@ async function verifyInstallation() {
 }
 
 // =======================
+// FORZAR PRECARGA AL ABRIR
+// =======================
+async function forcePreload() {
+  console.log('🚀 Forzando precarga de archivos...');
+  
+  try {
+    // Enviar mensaje al Service Worker para precargar
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'PRELOAD_CRITICAL'
+      });
+    }
+    
+    // Precargar directamente también
+    const criticalFiles = ['maestro.csv', 'service-worker.js'];
+    
+    for (const file of criticalFiles) {
+      try {
+        await fetch(file + '?preload=' + Date.now());
+        console.log('✅ Precargado:', file);
+      } catch (err) {
+        console.warn('⚠️ No se pudo precargar:', file);
+      }
+    }
+  } catch (err) {
+    console.error('❌ Error en precarga forzada:', err);
+  }
+}
+
+// =======================
+// VERIFICAR CONEXIÓN
+// =======================
+function checkConnection() {
+  if (!navigator.onLine) {
+    console.log('🌐 Modo offline detectado');
+    document.getElementById('offlineBanner').style.display = 'block';
+  }
+}
+
+// =======================
 // INICIAR
 // =======================
-loadCSV();
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🚀 Iniciando aplicación...');
+  checkConnection();
+  loadCSV();
+  
+  // Precargar archivos después de un breve delay
+  setTimeout(forcePreload, 1000);
+  setTimeout(verifyInstallation, 2000);
+});
 
-// Ejecutar verificación después de cargar
-setTimeout(verifyInstallation, 2000);
+// Escuchar cambios de conexión
+window.addEventListener('online', function() {
+  console.log('🌐 Conexión restaurada');
+  document.getElementById('offlineBanner').style.display = 'none';
+});
+
+window.addEventListener('offline', function() {
+  console.log('🌐 Sin conexión');
+  document.getElementById('offlineBanner').style.display = 'block';
+});
 </script>
 </body>
 </html>
