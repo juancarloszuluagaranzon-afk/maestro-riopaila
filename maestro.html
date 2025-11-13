@@ -271,9 +271,16 @@ function renderTable() {
 // =======================
 // EVENTOS DE INTERFAZ
 // =======================
-document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; renderTable(); });
-document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderTable(); } });
-document.getElementById('nextPage').addEventListener('click', () => { if (currentPage < Math.ceil(ROWS.length / pageSize)) { currentPage++; renderTable(); } });
+document.getElementById('nextPage').addEventListener('click', () => {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = ROWS.filter(r => r.some(v => String(v||'').toLowerCase().includes(search)));
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  
+  if (currentPage < totalPages) {
+    currentPage++;
+    renderTable();
+  }
+});
 
 // =======================
 // INICIAR
