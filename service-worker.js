@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.7.4';
+const CACHE_VERSION = 'v1.7.6';
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 
 // ⚠️ Ajusta según tu estructura de carpetas
