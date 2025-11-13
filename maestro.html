@@ -167,7 +167,7 @@ th {
 // =======================
 // CONFIGURACIÓN PRINCIPAL
 // =======================
-const APP_VERSION = 'v1.7.6'; // ✅ Incrementa este número en cada actualización
+const APP_VERSION = 'v1.7.3'; // ✅ Incrementa este número en cada actualización
 const CSV_FILE = 'maestro.csv';
 let HEADERS = [], ROWS = [];
 let currentPage = 1, pageSize = 25;
@@ -269,30 +269,11 @@ function renderTable() {
 }
 
 // =======================
-// EVENTOS DE INTERFAZ - CORREGIDOS
+// EVENTOS DE INTERFAZ
 // =======================
-document.getElementById('searchInput').addEventListener('input', () => { 
-  currentPage = 1; 
-  renderTable(); 
-});
-
-document.getElementById('prevPage').addEventListener('click', () => { 
-  if (currentPage > 1) { 
-    currentPage--; 
-    renderTable(); 
-  } 
-});
-
-document.getElementById('nextPage').addEventListener('click', () => {
-  const search = document.getElementById('searchInput').value.toLowerCase();
-  const filtered = ROWS.filter(r => r.some(v => String(v||'').toLowerCase().includes(search)));
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  
-  if (currentPage < totalPages) { 
-    currentPage++; 
-    renderTable(); 
-  } 
-});
+document.getElementById('searchInput').addEventListener('input', () => { currentPage = 1; renderTable(); });
+document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderTable(); } });
+document.getElementById('nextPage').addEventListener('click', () => { if (currentPage < Math.ceil(ROWS.length / pageSize)) { currentPage++; renderTable(); } });
 
 // =======================
 // INICIAR
