@@ -1,16 +1,13 @@
-const CACHE_VERSION = 'v1.7.6';
+const CACHE_VERSION = 'v1.7.5'; // Incrementa la versión
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
+const BASE = '/';
 
-// ⚠️ Ajusta según tu estructura de carpetas
-// Si está en raíz: const BASE = '/';
-// Si está en subdirectorio: const BASE = '/maestro-riopaila/';
-const BASE = '/'; 
-
+// Archivos a cachear - INCLUYE EXPLÍCITAMENTE EL CSV
 const urlsToCache = [
   BASE,
   BASE + 'index.html',
   BASE + 'maestro.html',
-  BASE + 'maestro.csv',
+  BASE + 'maestro.csv', // ✅ Asegúrate de que esté aquí
   BASE + 'manifest.json',
   BASE + 'icon-192.png',
   BASE + 'icon-512.png',
@@ -23,10 +20,20 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('[SW] Cacheando archivos:', urlsToCache);
-        return cache.addAll(urlsToCache);
+        // Usa cache.addAll pero con mejor manejo de errores
+        return Promise.all(
+          urlsToCache.map(url => {
+            return cache.add(url).catch(err => {
+              console.warn(`[SW] No se pudo cachear ${url}:`, err);
+            });
+          })
+        );
       })
-      .then(() => self.skipWaiting())
-      .catch(err => console.error('[SW] Error al cachear:', err))
+      .then(() => {
+        console.log('[SW] Todos los archivos procesados, activando...');
+        return self.skipWaiting();
+      })
+      .catch(err => console.error('[SW] Error crítico al cachear:', err))
   );
 });
 
@@ -43,53 +50,74 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => {
+      console.log('[SW] Claiming clients');
+      return self.clients.claim();
+    })
   );
 });
 
-// Fetch
+// Fetch - Estrategia más robusta
 self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // Ignorar requests externos
+  // Solo manejar requests de nuestro origen
   if (url.origin !== location.origin) return;
 
-  // CSV: Cache first con revalidación en background
+  // Para el CSV: Network First con fallback a caché
   if (request.url.includes('.csv')) {
     event.respondWith(
-      caches.match(request).then(cachedResponse => {
-        const fetchPromise = fetch(request).then(networkResponse => {
+      fetch(request)
+        .then(networkResponse => {
+          // Si la red responde, actualizar caché
           if (networkResponse && networkResponse.status === 200) {
             const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(request, clone);
+              console.log('[SW] CSV actualizado en caché');
+            });
           }
           return networkResponse;
-        }).catch(() => null);
-
-        // Devolver caché inmediatamente, actualizar en background
-        return cachedResponse || fetchPromise || Promise.reject('Sin conexión y sin caché');
-      })
+        })
+        .catch(async () => {
+          // Fallback a caché si la red falla
+          const cached = await caches.match(request);
+          if (cached) {
+            console.log('[SW] Sirviendo CSV desde caché (offline)');
+            return cached;
+          }
+          // Si no hay caché, rechazar
+          return Promise.reject(new Error('Offline y sin caché'));
+        })
     );
     return;
   }
 
-  // Resto: Cache first
+  // Para otros archivos: Cache First
   event.respondWith(
-    caches.match(request).then(response => {
-      if (response) {
-        console.log('[SW] Sirviendo desde caché:', request.url);
-        return response;
-      }
-      
-      return fetch(request).then(networkRes => {
-        if (networkRes && networkRes.status === 200) {
-          const clone = networkRes.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+    caches.match(request)
+      .then(cachedResponse => {
+        if (cachedResponse) {
+          console.log('[SW] Sirviendo desde caché:', request.url);
+          return cachedResponse;
         }
-        return networkRes;
-      });
-    })
+        
+        return fetch(request)
+          .then(networkResponse => {
+            if (networkResponse && networkResponse.status === 200) {
+              const clone = networkResponse.clone();
+              caches.open(CACHE_NAME).then(cache => {
+                cache.put(request, clone);
+              });
+            }
+            return networkResponse;
+          })
+          .catch(error => {
+            console.error('[SW] Error de fetch:', error);
+            throw error;
+          });
+      })
   );
 });
 
