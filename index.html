@@ -23,12 +23,49 @@ body {
   50% { transform: scale(1.05); opacity: 0.9; }
 }
 .animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
+
+/* Estilos para el banner de instalación */
+.install-banner {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  z-index: 1000;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+.install-banner button {
+  background: #0ea5a4;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  margin: 0 4px;
+  cursor: pointer;
+}
+.install-banner button.secondary {
+  background: #64748b;
+}
 </style>
 </head>
 
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center min-h-screen p-6 relative overflow-hidden">
   <!-- Fondo decorativo -->
   <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-teal-50 via-white to-slate-100 dark:from-slate-800 dark:via-slate-900 dark:to-black -z-10"></div>
+
+  <!-- Banner de instalación -->
+  <div id="installBanner" class="install-banner" style="display:none">
+    <div class="font-semibold mb-2">📱 Instalar App</div>
+    <div class="text-sm text-slate-300 mb-3">Instala la aplicación para uso offline</div>
+    <button onclick="installApp()">Instalar</button>
+    <button onclick="dismissInstall()" class="secondary">Más tarde</button>
+  </div>
 
   <!-- Contenedor principal -->
   <main class="w-full max-w-lg text-center bg-white dark:bg-slate-800/70 backdrop-blur-lg rounded-2xl shadow-xl p-10 border border-slate-200 dark:border-slate-700 relative">
@@ -44,6 +81,14 @@ body {
     <h2 class="text-lg font-medium text-slate-600 dark:text-slate-300 mb-3">Maestro de Suertes · Transformación Digital</h2>
     <span class="inline-block bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300 px-4 py-1 rounded-full text-sm font-semibold mb-8">🌱 Innovando el campo</span>
 
+    <!-- Estado de la instalación -->
+    <div id="installStatus" class="mb-6 p-4 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm">
+      <div class="flex items-center justify-center gap-2">
+        <span id="statusIcon" class="material-symbols-outlined text-teal-500">sync</span>
+        <span id="statusText">Verificando instalación...</span>
+      </div>
+    </div>
+
     <!-- Botones principales -->
     <div class="flex flex-col gap-4">
       <button onclick="window.location.href='maestro.html'" class="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-400 hover:from-teal-500 hover:to-teal-300 text-white font-bold rounded-lg shadow-md transition-transform hover:scale-[1.02]">
@@ -52,6 +97,10 @@ body {
 
       <button onclick="clearCache()" class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg shadow transition-transform hover:scale-[1.02]">
         🔄 Limpiar Caché
+      </button>
+
+      <button onclick="verifyInstallation()" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg shadow transition-transform hover:scale-[1.02]">
+        🔍 Verificar Instalación
       </button>
     </div>
 
@@ -67,7 +116,7 @@ body {
       </div>
       <div class="flex flex-col items-center gap-2">
         <span class="material-symbols-outlined text-teal-500 text-3xl">devices</span>
-        <p class="text-sm font-semibold">Adaptable</p>
+        <p class="text-sm font-semibold">Offline</p>
       </div>
     </div>
   </main>
@@ -80,65 +129,277 @@ body {
   <!-- Service Worker + Clear Cache -->
   <script>
 // ==============================
-// 🔧 Registro del Service Worker con actualización automática
+// 🔧 CONFIGURACIÓN
 // ==============================
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js')
-    .then(reg => {
-      console.log('[Service Worker] Registrado correctamente:', reg.scope);
+const APP_VERSION = 'v1.7.6';
+const CACHE_NAME = 'riopaila-maestro-v1.7.5';
+let deferredPrompt = null;
 
-      // Detectar nuevas versiones del SW
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
+// ==============================
+// 🔧 Registro del Service Worker MEJORADO
+// ==============================
+async function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.register('service-worker.js');
+      console.log('[SW] Registrado correctamente:', registration.scope);
+      
+      // Verificar estado de la instalación
+      await verifyCacheStatus();
+      
+      // Escuchar actualizaciones (pero no forzar)
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('⚡ Nueva versión disponible. Activando...');
-            newWorker.postMessage({ type: 'SKIP_WAITING' });
+            console.log('⚡ Nueva versión disponible');
+            showUpdateNotification();
           }
         });
       });
-    })
-    .catch(err => console.error('[Service Worker] Error al registrar:', err));
 
-  // Recargar automáticamente al activar nuevo SW
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    console.log('[Service Worker] Nueva versión activada, recargando...');
-    window.location.reload();
-  });
+      return registration;
+    } catch (err) {
+      console.error('[SW] Error al registrar:', err);
+      updateStatus('error', 'Error en la instalación');
+      return null;
+    }
+  } else {
+    console.warn('[SW] Service Worker no soportado');
+    updateStatus('warning', 'Navegador no compatible con modo offline');
+    return null;
+  }
 }
 
 // ==============================
-// 🧹 Función para limpiar caché y recargar
+// 📱 VERIFICACIÓN DE CACHÉ
+// ==============================
+async function verifyCacheStatus() {
+  try {
+    console.log('🔍 Verificando estado del caché...');
+    
+    const cache = await caches.open(CACHE_NAME);
+    const keys = await cache.keys();
+    const cachedFiles = keys.map(req => new URL(req.url).pathname.split('/').pop());
+    
+    console.log('📂 Archivos en caché:', cachedFiles);
+    
+    const essentialFiles = ['maestro.html', 'maestro.csv', 'service-worker.js'];
+    const missingFiles = essentialFiles.filter(file => !cachedFiles.includes(file));
+    
+    if (missingFiles.length === 0) {
+      updateStatus('success', 'App lista para uso offline');
+      console.log('✅ Todos los archivos esenciales están en caché');
+    } else {
+      updateStatus('warning', `Faltan archivos: ${missingFiles.join(', ')}`);
+      console.warn('❌ Archivos faltantes:', missingFiles);
+    }
+    
+    return missingFiles.length === 0;
+  } catch (err) {
+    console.error('❌ Error verificando caché:', err);
+    updateStatus('error', 'Error verificando instalación');
+    return false;
+  }
+}
+
+// ==============================
+// 📊 ACTUALIZAR ESTADO EN UI
+// ==============================
+function updateStatus(type, message) {
+  const statusIcon = document.getElementById('statusIcon');
+  const statusText = document.getElementById('statusText');
+  const statusDiv = document.getElementById('installStatus');
+  
+  statusText.textContent = message;
+  
+  // Limpiar clases anteriores
+  statusDiv.className = 'mb-6 p-4 rounded-lg text-sm';
+  statusIcon.className = 'material-symbols-outlined';
+  
+  switch(type) {
+    case 'success':
+      statusDiv.classList.add('bg-green-100', 'dark:bg-green-900');
+      statusIcon.classList.add('text-green-500');
+      statusIcon.textContent = 'check_circle';
+      break;
+    case 'warning':
+      statusDiv.classList.add('bg-amber-100', 'dark:bg-amber-900');
+      statusIcon.classList.add('text-amber-500');
+      statusIcon.textContent = 'warning';
+      break;
+    case 'error':
+      statusDiv.classList.add('bg-red-100', 'dark:bg-red-900');
+      statusIcon.classList.add('text-red-500');
+      statusIcon.textContent = 'error';
+      break;
+    default:
+      statusDiv.classList.add('bg-slate-100', 'dark:bg-slate-700');
+      statusIcon.classList.add('text-teal-500');
+      statusIcon.textContent = 'sync';
+  }
+}
+
+// ==============================
+// 📱 INSTALACIÓN DE PWA
+// ==============================
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallBanner();
+});
+
+function showInstallBanner() {
+  const banner = document.getElementById('installBanner');
+  banner.style.display = 'block';
+}
+
+function dismissInstall() {
+  const banner = document.getElementById('installBanner');
+  banner.style.display = 'none';
+}
+
+async function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      console.log('✅ Usuario aceptó la instalación');
+      updateStatus('success', 'App instalada correctamente');
+    }
+    
+    deferredPrompt = null;
+    dismissInstall();
+  }
+}
+
+// ==============================
+// 🔄 NOTIFICACIÓN DE ACTUALIZACIÓN
+// ==============================
+function showUpdateNotification() {
+  if (confirm('¡Nueva versión disponible! ¿Quieres actualizar ahora?')) {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(registration => {
+        registration.active.postMessage({ type: 'SKIP_WAITING' });
+      });
+    }
+  }
+}
+
+// ==============================
+// 🧹 LIMPIAR CACHÉ MEJORADO
 // ==============================
 async function clearCache() {
   try {
-    console.log('🧹 Limpiando caché...');
+    console.log('🧹 Iniciando limpieza de caché...');
+    updateStatus('sync', 'Limpiando caché...');
     
-    // Eliminar Service Workers
+    // 1. Desregistrar Service Workers
     if ('serviceWorker' in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      for (const reg of regs) {
-        await reg.unregister();
-        console.log('🗑️ Service Worker eliminado:', reg.scope);
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        await registration.unregister();
+        console.log('🗑️ Service Worker eliminado:', registration.scope);
       }
     }
 
-    // Eliminar cachés
+    // 2. Eliminar todas las cachés
     if ('caches' in window) {
       const cacheNames = await caches.keys();
       await Promise.all(cacheNames.map(name => caches.delete(name)));
       console.log('🧾 Cachés eliminadas:', cacheNames);
     }
 
+    // 3. Limpiar almacenamiento local
     localStorage.clear();
-    alert('✅ Caché limpiado correctamente. La aplicación se recargará.');
-    window.location.reload(true);
+    sessionStorage.clear();
+
+    console.log('✅ Caché limpiado completamente');
+    updateStatus('success', 'Caché limpiado correctamente');
+    
+    // 4. Recargar y reinstalar
+    setTimeout(() => {
+      if (confirm('✅ Caché limpiado. Se recargará la página para reinstalar la app.')) {
+        window.location.reload();
+      }
+    }, 1000);
+    
   } catch (err) {
     console.error('❌ Error al limpiar caché:', err);
-    alert('⚠️ Error al limpiar caché. Intenta cerrar y abrir la app nuevamente.');
+    updateStatus('error', 'Error al limpiar caché');
+    alert('⚠️ Error al limpiar caché. Intenta cerrar y abrir el navegador.');
   }
 }
+
+// ==============================
+// 🔍 VERIFICACIÓN MANUAL
+// ==============================
+async function verifyInstallation() {
+  updateStatus('sync', 'Verificando instalación...');
+  const isComplete = await verifyCacheStatus();
+  
+  if (isComplete) {
+    // Forzar precarga de archivos esenciales
+    await preloadEssentialFiles();
+  }
+}
+
+// ==============================
+// 📥 PRECARGAR ARCHIVOS ESENCIALES
+// ==============================
+async function preloadEssentialFiles() {
+  try {
+    console.log('📥 Precargando archivos esenciales...');
+    const filesToPreload = ['maestro.html', 'maestro.csv'];
+    
+    for (const file of filesToPreload) {
+      try {
+        await fetch(file);
+        console.log(`✅ Precargado: ${file}`);
+      } catch (err) {
+        console.warn(`⚠️ No se pudo precargar: ${file}`, err);
+      }
+    }
+    
+    console.log('✅ Precarga completada');
+  } catch (err) {
+    console.error('❌ Error en precarga:', err);
+  }
+}
+
+// ==============================
+// 🚀 INICIALIZACIÓN
+// ==============================
+async function initializeApp() {
+  console.log('🚀 Inicializando app...');
+  
+  // Registrar Service Worker
+  await registerServiceWorker();
+  
+  // Verificar si estamos online/offline
+  if (!navigator.onLine) {
+    updateStatus('warning', 'Estás offline - Algunas funciones pueden no estar disponibles');
+  }
+  
+  // Mostrar estado inicial
+  setTimeout(() => {
+    verifyCacheStatus();
+  }, 2000);
+}
+
+// Iniciar cuando se carga la página
+document.addEventListener('DOMContentLoaded', initializeApp);
+
+// Escuchar cambios de conexión
+window.addEventListener('online', () => {
+  updateStatus('success', 'Conexión restaurada - App lista');
+  verifyCacheStatus();
+});
+
+window.addEventListener('offline', () => {
+  updateStatus('warning', 'Estás offline - Usando datos en caché');
+});
   </script>
 </body>
 </html>
-
