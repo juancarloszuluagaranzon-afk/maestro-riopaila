@@ -85,7 +85,7 @@ body {
     <div id="installStatus" class="mb-6 p-4 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm">
       <div class="flex items-center justify-center gap-2">
         <span id="statusIcon" class="material-symbols-outlined text-teal-500">sync</span>
-        <span id="statusText">Verificando instalación...</span>
+        <span id="statusText">Inicializando aplicación...</span>
       </div>
     </div>
 
@@ -132,8 +132,9 @@ body {
 // 🔧 CONFIGURACIÓN
 // ==============================
 const APP_VERSION = 'v1.7.6';
-const CACHE_NAME = 'riopaila-maestro-v1.7.5';
+const CACHE_NAME = 'riopaila-maestro-v1.7.6';
 let deferredPrompt = null;
+let isInstalling = false;
 
 // ==============================
 // 🔧 Registro del Service Worker MEJORADO
@@ -141,11 +142,26 @@ let deferredPrompt = null;
 async function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     try {
+      updateStatus('sync', 'Instalando aplicación...');
+      
       const registration = await navigator.serviceWorker.register('service-worker.js');
       console.log('[SW] Registrado correctamente:', registration.scope);
       
-      // Verificar estado de la instalación
-      await verifyCacheStatus();
+      // Esperar a que el Service Worker esté activo
+      if (registration.installing) {
+        isInstalling = true;
+        registration.installing.addEventListener('statechange', () => {
+          if (registration.installing.state === 'activated') {
+            console.log('[SW] Activado y listo');
+            isInstalling = false;
+            // Esperar un poco más para que cachee los archivos
+            setTimeout(() => verifyCacheStatus(), 3000);
+          }
+        });
+      } else if (registration.active) {
+        // Si ya está activo, verificar inmediatamente
+        setTimeout(() => verifyCacheStatus(), 2000);
+      }
       
       // Escuchar actualizaciones (pero no forzar)
       registration.addEventListener('updatefound', () => {
@@ -172,11 +188,15 @@ async function registerServiceWorker() {
 }
 
 // ==============================
-// 📱 VERIFICACIÓN DE CACHÉ
+// 📱 VERIFICACIÓN DE CACHÉ MEJORADA
 // ==============================
 async function verifyCacheStatus() {
   try {
     console.log('🔍 Verificando estado del caché...');
+    updateStatus('sync', 'Verificando instalación...');
+    
+    // Dar tiempo al Service Worker para que cachee los archivos
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
     const cache = await caches.open(CACHE_NAME);
     const keys = await cache.keys();
@@ -188,18 +208,53 @@ async function verifyCacheStatus() {
     const missingFiles = essentialFiles.filter(file => !cachedFiles.includes(file));
     
     if (missingFiles.length === 0) {
-      updateStatus('success', 'App lista para uso offline');
+      updateStatus('success', '✅ App lista para uso offline');
       console.log('✅ Todos los archivos esenciales están en caché');
     } else {
-      updateStatus('warning', `Faltan archivos: ${missingFiles.join(', ')}`);
-      console.warn('❌ Archivos faltantes:', missingFiles);
+      // Si faltan archivos, intentar precargarlos
+      console.log('🔄 Faltan archivos, precargando...', missingFiles);
+      updateStatus('warning', '🔄 Completando instalación...');
+      
+      await preloadMissingFiles(missingFiles);
+      
+      // Verificar nuevamente después de precargar
+      setTimeout(() => verifyCacheStatus(), 2000);
     }
     
     return missingFiles.length === 0;
   } catch (err) {
     console.error('❌ Error verificando caché:', err);
-    updateStatus('error', 'Error verificando instalación');
+    
+    // Si hay error, probablemente es porque el SW aún no está listo
+    if (isInstalling) {
+      updateStatus('sync', '🔄 Instalación en progreso...');
+      setTimeout(() => verifyCacheStatus(), 3000);
+    } else {
+      updateStatus('warning', '⚠️ Verifica tu conexión a internet');
+    }
+    
     return false;
+  }
+}
+
+// ==============================
+// 📥 PRECARGAR ARCHIVOS FALTANTES
+// ==============================
+async function preloadMissingFiles(missingFiles) {
+  try {
+    console.log('📥 Precargando archivos faltantes:', missingFiles);
+    
+    for (const file of missingFiles) {
+      try {
+        // Usar fetch para forzar la caché
+        await fetch(file + '?preload=' + Date.now());
+        console.log('✅ Precargado:', file);
+      } catch (err) {
+        console.warn('⚠️ No se pudo precargar:', file, err);
+      }
+    }
+  } catch (err) {
+    console.error('❌ Error en precarga:', err);
   }
 }
 
@@ -226,7 +281,7 @@ function updateStatus(type, message) {
     case 'warning':
       statusDiv.classList.add('bg-amber-100', 'dark:bg-amber-900');
       statusIcon.classList.add('text-amber-500');
-      statusIcon.textContent = 'warning';
+      statusIcon.textContent = 'schedule';
       break;
     case 'error':
       statusDiv.classList.add('bg-red-100', 'dark:bg-red-900');
@@ -316,7 +371,7 @@ async function clearCache() {
     sessionStorage.clear();
 
     console.log('✅ Caché limpiado completamente');
-    updateStatus('success', 'Caché limpiado correctamente');
+    updateStatus('success', '✅ Caché limpiado correctamente');
     
     // 4. Recargar y reinstalar
     setTimeout(() => {
@@ -327,7 +382,7 @@ async function clearCache() {
     
   } catch (err) {
     console.error('❌ Error al limpiar caché:', err);
-    updateStatus('error', 'Error al limpiar caché');
+    updateStatus('error', '❌ Error al limpiar caché');
     alert('⚠️ Error al limpiar caché. Intenta cerrar y abrir el navegador.');
   }
 }
@@ -337,35 +392,7 @@ async function clearCache() {
 // ==============================
 async function verifyInstallation() {
   updateStatus('sync', 'Verificando instalación...');
-  const isComplete = await verifyCacheStatus();
-  
-  if (isComplete) {
-    // Forzar precarga de archivos esenciales
-    await preloadEssentialFiles();
-  }
-}
-
-// ==============================
-// 📥 PRECARGAR ARCHIVOS ESENCIALES
-// ==============================
-async function preloadEssentialFiles() {
-  try {
-    console.log('📥 Precargando archivos esenciales...');
-    const filesToPreload = ['maestro.html', 'maestro.csv'];
-    
-    for (const file of filesToPreload) {
-      try {
-        await fetch(file);
-        console.log(`✅ Precargado: ${file}`);
-      } catch (err) {
-        console.warn(`⚠️ No se pudo precargar: ${file}`, err);
-      }
-    }
-    
-    console.log('✅ Precarga completada');
-  } catch (err) {
-    console.error('❌ Error en precarga:', err);
-  }
+  await verifyCacheStatus();
 }
 
 // ==============================
@@ -374,18 +401,18 @@ async function preloadEssentialFiles() {
 async function initializeApp() {
   console.log('🚀 Inicializando app...');
   
+  // Verificar si estamos online/offline
+  if (!navigator.onLine) {
+    updateStatus('warning', '🌐 Estás offline - Algunas funciones pueden no estar disponibles');
+  }
+  
   // Registrar Service Worker
   await registerServiceWorker();
   
-  // Verificar si estamos online/offline
-  if (!navigator.onLine) {
-    updateStatus('warning', 'Estás offline - Algunas funciones pueden no estar disponibles');
-  }
-  
-  // Mostrar estado inicial
+  // Verificación inicial después de más tiempo
   setTimeout(() => {
     verifyCacheStatus();
-  }, 2000);
+  }, 4000);
 }
 
 // Iniciar cuando se carga la página
@@ -393,12 +420,12 @@ document.addEventListener('DOMContentLoaded', initializeApp);
 
 // Escuchar cambios de conexión
 window.addEventListener('online', () => {
-  updateStatus('success', 'Conexión restaurada - App lista');
+  updateStatus('success', '✅ Conexión restaurada - App lista');
   verifyCacheStatus();
 });
 
 window.addEventListener('offline', () => {
-  updateStatus('warning', 'Estás offline - Usando datos en caché');
+  updateStatus('warning', '🌐 Estás offline - Usando datos en caché');
 });
   </script>
 </body>
