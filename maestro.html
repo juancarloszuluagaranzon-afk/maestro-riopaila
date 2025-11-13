@@ -1,432 +1,510 @@
 <!doctype html>
-<html lang="es" class="dark">
+<html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="manifest" href="manifest.json">
-<title>Riopaila Agrícola</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com" rel="preconnect">
-<link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Riopaila Agrícola – Maestro de Suertes</title>
 <style>
-.material-symbols-outlined {
-  font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+:root {
+  --bg:#f7fafc;
+  --accent:#0ea5a4;
+  --header-bg:#e9eef0;
 }
 body {
-  min-height: max(884px, 100dvh);
-  font-family: 'Manrope', sans-serif;
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:var(--bg);
+  color:#0f172a;
 }
-@keyframes pulse-slow {
-  0%,100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.9; }
+header {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 16px;
+  background:var(--header-bg);
+  position:sticky;
+  top:0;
+  z-index:10;
 }
-.animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
-
-/* Estilos para el banner de instalación */
-.install-banner {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #0f172a;
-  color: white;
-  padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-  z-index: 1000;
-  max-width: 400px;
-  width: 90%;
-  text-align: center;
+header img.logo {
+  width:48px;
+  height:48px;
+  object-fit:contain;
+  cursor:pointer;
 }
-.install-banner button {
-  background: #0ea5a4;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  margin: 0 4px;
-  cursor: pointer;
+header .title {
+  font-size:1.1rem;
+  font-weight:700;
 }
-.install-banner button.secondary {
-  background: #64748b;
+header .update {
+  font-size:0.85rem;
+  color:#475569;
+}
+.container {
+  padding:16px;
+}
+.controls {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:12px;
+  align-items:center;
+}
+input {
+  padding:8px;
+  border-radius:8px;
+  border:1px solid #e6e9ee;
+  flex:1;
+  min-width:200px;
+}
+.table-wrap {
+  overflow-x:auto;
+  background:#fff;
+  border-radius:8px;
+  padding:8px;
+}
+table {
+  border-collapse:collapse;
+  width:100%;
+  min-width:800px;
+}
+th, td {
+  padding:8px;
+  border-bottom:1px solid #eef2f7;
+  white-space:nowrap;
+  text-align:left;
+  font-size:13px;
+}
+th {
+  background:#fbfeff;
+  position:sticky;
+  top:0;
+  font-weight:600;
+}
+.loading {
+  text-align:center;
+  padding:40px;
+  color:#64748b;
+}
+.error {
+  background:#fee;
+  color:#c00;
+  padding:12px;
+  border-radius:8px;
+  margin:16px;
+}
+.update-banner {
+  background:#fef3c7;
+  border-left:4px solid #f59e0b;
+  padding:12px;
+  margin-bottom:16px;
+  border-radius:4px;
+}
+.offline-banner {
+  background:#f0f9ff;
+  border-left:4px solid #0ea5e9;
+  padding:12px;
+  margin-bottom:16px;
+  border-radius:4px;
+}
+.update-banner button, .error button {
+  margin-left:12px;
+  background:var(--accent);
+  color:white;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
+}
+.update-banner button:hover, .error button:hover {
+  opacity:0.9;
+}
+@media (max-width:600px) {
+  input {
+    padding:6px;
+    font-size:14px;
+  }
+  th, td {
+    padding:6px;
+    font-size:12px;
+  }
 }
 </style>
 </head>
+<body>
+<header>
+  <a href="index.html" title="Volver al inicio">
+    <img src="icon-192.png" class="logo" alt="logo" onerror="this.style.display='none'">
+  </a>
+  <div>
+    <div class="title">Riopaila Agrícola – Maestro de Suertes</div>
+    <div class="update">Última actualización: 28 de octubre de 2025</div>
+  </div>
+</header>
 
-<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center min-h-screen p-6 relative overflow-hidden">
-  <!-- Fondo decorativo -->
-  <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-teal-50 via-white to-slate-100 dark:from-slate-800 dark:via-slate-900 dark:to-black -z-10"></div>
-
-  <!-- Banner de instalación -->
-  <div id="installBanner" class="install-banner" style="display:none">
-    <div class="font-semibold mb-2">📱 Instalar App</div>
-    <div class="text-sm text-slate-300 mb-3">Instala la aplicación para uso offline</div>
-    <button onclick="installApp()">Instalar</button>
-    <button onclick="dismissInstall()" class="secondary">Más tarde</button>
+<div class="container">
+  <div id="updateBanner" class="update-banner" style="display:none">
+    ⚠️ Hay una nueva versión disponible. 
+    <button onclick="updateApp()">Actualizar ahora</button>
   </div>
 
-  <!-- Contenedor principal -->
-  <main class="w-full max-w-lg text-center bg-white dark:bg-slate-800/70 backdrop-blur-lg rounded-2xl shadow-xl p-10 border border-slate-200 dark:border-slate-700 relative">
-    
-    <!-- Logo -->
-    <div class="flex justify-center mb-6">
-      <div class="w-28 h-28 rounded-full bg-gradient-to-tr from-teal-500 to-teal-300 flex items-center justify-center shadow-lg animate-pulse-slow">
-        <img src="icon-192.png" alt="Riopaila Agrícola" class="w-16 h-16">
-      </div>
-    </div>
+  <div id="offlineBanner" class="offline-banner" style="display:none">
+    📡 <strong>Modo offline:</strong> Mostrando datos en caché. Algunos datos pueden no estar actualizados.
+  </div>
 
-    <h1 class="text-3xl font-extrabold tracking-tight mb-2 text-slate-900 dark:text-white">Riopaila Agrícola</h1>
-    <h2 class="text-lg font-medium text-slate-600 dark:text-slate-300 mb-3">Maestro de Suertes · Transformación Digital</h2>
-    <span class="inline-block bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300 px-4 py-1 rounded-full text-sm font-semibold mb-8">🌱 Innovando el campo</span>
+  <div class="controls">
+    <label>Buscar: <input id="searchInput" placeholder="Buscar..."></label>
+  </div>
 
-    <!-- Estado de la instalación -->
-    <div id="installStatus" class="mb-6 p-4 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm">
-      <div class="flex items-center justify-center gap-2">
-        <span id="statusIcon" class="material-symbols-outlined text-teal-500">sync</span>
-        <span id="statusText">Inicializando aplicación...</span>
-      </div>
-    </div>
+  <div id="loadingMsg" class="loading">Cargando datos...</div>
+  <div id="errorMsg" class="error" style="display:none"></div>
 
-    <!-- Botones principales -->
-    <div class="flex flex-col gap-4">
-      <button onclick="window.location.href='maestro.html'" class="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-400 hover:from-teal-500 hover:to-teal-300 text-white font-bold rounded-lg shadow-md transition-transform hover:scale-[1.02]">
-        📋 Abrir Maestro
-      </button>
+  <div class="table-wrap" style="display:none">
+    <table id="maestro">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-      <button onclick="clearCache()" class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg shadow transition-transform hover:scale-[1.02]">
-        🔄 Limpiar Caché
-      </button>
+  <div id="pagination" style="display:none;justify-content:center;align-items:center;gap:12px;margin:16px">
+    <button id="prevPage" class="primary">← Anterior</button>
+    <span id="pageInfo"></span>
+    <button id="nextPage" class="primary">Siguiente →</button>
+  </div>
+</div>
 
-      <button onclick="verifyInstallation()" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg shadow transition-transform hover:scale-[1.02]">
-        🔍 Verificar Instalación
-      </button>
-    </div>
-
-    <!-- Características -->
-    <div class="mt-10 grid grid-cols-3 gap-4 text-center">
-      <div class="flex flex-col items-center gap-2">
-        <span class="material-symbols-outlined text-teal-500 text-3xl">bolt</span>
-        <p class="text-sm font-semibold">Rápido</p>
-      </div>
-      <div class="flex flex-col items-center gap-2">
-        <span class="material-symbols-outlined text-teal-500 text-3xl">shield</span>
-        <p class="text-sm font-semibold">Seguro</p>
-      </div>
-      <div class="flex flex-col items-center gap-2">
-        <span class="material-symbols-outlined text-teal-500 text-3xl">devices</span>
-        <p class="text-sm font-semibold">Offline</p>
-      </div>
-    </div>
-  </main>
-
-  <!-- Footer -->
-  <footer class="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
-    © 2025 Riopaila Agrícola S.A.S. — <span class="font-semibold text-teal-500">v1.7.6</span>
-  </footer>
-
-  <!-- Service Worker + Clear Cache -->
-  <script>
-// ==============================
-// 🔧 CONFIGURACIÓN
-// ==============================
+<script>
+// =======================
+// CONFIGURACIÓN PRINCIPAL
+// =======================
 const APP_VERSION = 'v1.7.6';
+const CSV_FILE = 'maestro.csv';
 const CACHE_NAME = 'riopaila-maestro-v1.7.6';
-let deferredPrompt = null;
-let isInstalling = false;
+let HEADERS = [], ROWS = [];
+let currentPage = 1, pageSize = 25;
+let newWorkerWaiting = null;
 
-// ==============================
-// 🔧 Registro del Service Worker MEJORADO
-// ==============================
-async function registerServiceWorker() {
-  if ('serviceWorker' in navigator) {
-    try {
-      updateStatus('sync', 'Instalando aplicación...');
-      
-      const registration = await navigator.serviceWorker.register('service-worker.js');
-      console.log('[SW] Registrado correctamente:', registration.scope);
-      
-      // Esperar a que el Service Worker esté activo
-      if (registration.installing) {
-        isInstalling = true;
-        registration.installing.addEventListener('statechange', () => {
-          if (registration.installing.state === 'activated') {
-            console.log('[SW] Activado y listo');
-            isInstalling = false;
-            // Esperar un poco más para que cachee los archivos
-            setTimeout(() => verifyCacheStatus(), 3000);
-          }
-        });
-      } else if (registration.active) {
-        // Si ya está activo, verificar inmediatamente
-        setTimeout(() => verifyCacheStatus(), 2000);
-      }
-      
-      // Escuchar actualizaciones (pero no forzar)
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
+// =======================
+// SERVICE WORKER
+// =======================
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+    .then(reg => {
+      console.log('[SW] Registrado correctamente:', reg.scope);
+
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('⚡ Nueva versión disponible');
-            showUpdateNotification();
+            newWorkerWaiting = newWorker;
+            document.getElementById('updateBanner').style.display = 'block';
           }
         });
       });
+    })
+    .catch(err => console.error('[SW] Error al registrar:', err));
 
-      return registration;
-    } catch (err) {
-      console.error('[SW] Error al registrar:', err);
-      updateStatus('error', 'Error en la instalación');
-      return null;
-    }
-  } else {
-    console.warn('[SW] Service Worker no soportado');
-    updateStatus('warning', 'Navegador no compatible con modo offline');
-    return null;
-  }
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    console.log('[SW] Nueva versión activada → recargando...');
+    setTimeout(() => window.location.reload(), 1000);
+  });
 }
 
-// ==============================
-// 📱 VERIFICACIÓN DE CACHÉ MEJORADA
-// ==============================
-async function verifyCacheStatus() {
-  try {
-    console.log('🔍 Verificando estado del caché...');
-    updateStatus('sync', 'Verificando instalación...');
-    
-    // Dar tiempo al Service Worker para que cachee los archivos
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const cache = await caches.open(CACHE_NAME);
-    const keys = await cache.keys();
-    const cachedFiles = keys.map(req => new URL(req.url).pathname.split('/').pop());
-    
-    console.log('📂 Archivos en caché:', cachedFiles);
-    
-    const essentialFiles = ['maestro.html', 'maestro.csv', 'service-worker.js'];
-    const missingFiles = essentialFiles.filter(file => !cachedFiles.includes(file));
-    
-    if (missingFiles.length === 0) {
-      updateStatus('success', '✅ App lista para uso offline');
-      console.log('✅ Todos los archivos esenciales están en caché');
-    } else {
-      // Si faltan archivos, intentar precargarlos
-      console.log('🔄 Faltan archivos, precargando...', missingFiles);
-      updateStatus('warning', '🔄 Completando instalación...');
-      
-      await preloadMissingFiles(missingFiles);
-      
-      // Verificar nuevamente después de precargar
-      setTimeout(() => verifyCacheStatus(), 2000);
-    }
-    
-    return missingFiles.length === 0;
-  } catch (err) {
-    console.error('❌ Error verificando caché:', err);
-    
-    // Si hay error, probablemente es porque el SW aún no está listo
-    if (isInstalling) {
-      updateStatus('sync', '🔄 Instalación en progreso...');
-      setTimeout(() => verifyCacheStatus(), 3000);
-    } else {
-      updateStatus('warning', '⚠️ Verifica tu conexión a internet');
-    }
-    
-    return false;
-  }
+function updateApp() {
+  if (newWorkerWaiting) newWorkerWaiting.postMessage({ type: 'SKIP_WAITING' });
 }
 
-// ==============================
-// 📥 PRECARGAR ARCHIVOS FALTANTES
-// ==============================
-async function preloadMissingFiles(missingFiles) {
+// =======================
+// CARGA DEL CSV - ESTRATEGIA MEJORADA
+// =======================
+async function loadCSV() {
+  // Mostrar que estamos intentando cargar
+  document.getElementById('loadingMsg').innerHTML = 
+    'Cargando datos...<br><small>Verificando conexión y caché</small>';
+
   try {
-    console.log('📥 Precargando archivos faltantes:', missingFiles);
+    console.log('[CSV] 🔄 Intentando cargar desde red...');
     
-    for (const file of missingFiles) {
-      try {
-        // Usar fetch para forzar la caché
-        await fetch(file + '?preload=' + Date.now());
-        console.log('✅ Precargado:', file);
-      } catch (err) {
-        console.warn('⚠️ No se pudo precargar:', file, err);
+    // Intentar con timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    const response = await fetch(`${CSV_FILE}?v=${Date.now()}`, {
+      cache: 'no-store',
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const text = await response.text();
+    if (!text || text.trim().length === 0) {
+      throw new Error('CSV vacío o inválido');
+    }
+    
+    parseCSV(text);
+    console.log('[CSV] ✅ Cargado desde red correctamente');
+    document.getElementById('offlineBanner').style.display = 'none';
+    
+  } catch (error) {
+    console.warn('[CSV] 🌐 Red falló:', error.message, '- Buscando en caché...');
+    
+    try {
+      // Buscar en caché de forma más agresiva
+      let cached = await caches.match(CSV_FILE);
+      
+      // Si no encontramos, intentar con diferentes URLs
+      if (!cached) {
+        cached = await caches.match('/maestro.csv');
       }
+      if (!cached) {
+        cached = await caches.match('./maestro.csv');
+      }
+      
+      if (cached) {
+        const text = await cached.text();
+        if (text && text.trim().length > 0) {
+          parseCSV(text);
+          console.log('[CSV] ✅ Cargado desde caché correctamente');
+          document.getElementById('offlineBanner').style.display = 'block';
+          return;
+        }
+      }
+      
+      // Último intento: buscar en cualquier caché
+      const cacheNames = await caches.keys();
+      for (const cacheName of cacheNames) {
+        const cache = await caches.open(cacheName);
+        const keys = await cache.keys();
+        const csvRequest = keys.find(req => 
+          req.url.includes('maestro.csv') || 
+          req.url.endsWith('/maestro.csv')
+        );
+        
+        if (csvRequest) {
+          const cached = await cache.match(csvRequest);
+          if (cached) {
+            const text = await cached.text();
+            if (text && text.trim().length > 0) {
+              parseCSV(text);
+              console.log('[CSV] ✅ Cargado desde caché alternativa:', cacheName);
+              document.getElementById('offlineBanner').style.display = 'block';
+              return;
+            }
+          }
+        }
+      }
+      
+      throw new Error('Sin conexión y sin datos en caché.');
+      
+    } catch (err) {
+      console.error('[CSV] ❌ Error crítico:', err);
+      showError(err.message);
     }
-  } catch (err) {
-    console.error('❌ Error en precarga:', err);
   }
 }
 
-// ==============================
-// 📊 ACTUALIZAR ESTADO EN UI
-// ==============================
-function updateStatus(type, message) {
-  const statusIcon = document.getElementById('statusIcon');
-  const statusText = document.getElementById('statusText');
-  const statusDiv = document.getElementById('installStatus');
-  
-  statusText.textContent = message;
-  
-  // Limpiar clases anteriores
-  statusDiv.className = 'mb-6 p-4 rounded-lg text-sm';
-  statusIcon.className = 'material-symbols-outlined';
-  
-  switch(type) {
-    case 'success':
-      statusDiv.classList.add('bg-green-100', 'dark:bg-green-900');
-      statusIcon.classList.add('text-green-500');
-      statusIcon.textContent = 'check_circle';
-      break;
-    case 'warning':
-      statusDiv.classList.add('bg-amber-100', 'dark:bg-amber-900');
-      statusIcon.classList.add('text-amber-500');
-      statusIcon.textContent = 'schedule';
-      break;
-    case 'error':
-      statusDiv.classList.add('bg-red-100', 'dark:bg-red-900');
-      statusIcon.classList.add('text-red-500');
-      statusIcon.textContent = 'error';
-      break;
-    default:
-      statusDiv.classList.add('bg-slate-100', 'dark:bg-slate-700');
-      statusIcon.classList.add('text-teal-500');
-      statusIcon.textContent = 'sync';
-  }
+function showError(message) {
+  document.getElementById('loadingMsg').style.display = 'none';
+  const errDiv = document.getElementById('errorMsg');
+  errDiv.style.display = 'block';
+  errDiv.innerHTML = `
+    <strong>Error:</strong> ${message}<br>
+    <small>Verifica tu conexión a internet o contacta al administrador.</small>
+    <br><br>
+    <button onclick="location.reload()">Reintentar</button>
+    <button onclick="clearCacheAndReload()" style="margin-left: 8px; background: #64748b;">Limpiar Caché</button>
+  `;
 }
 
-// ==============================
-// 📱 INSTALACIÓN DE PWA
-// ==============================
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  showInstallBanner();
+function parseCSV(text) {
+  const lines = text.split('\n').filter(line => line.trim());
+  if (lines.length === 0) {
+    throw new Error('El archivo CSV está vacío');
+  }
+  
+  const sep = lines[0].includes(';') ? ';' : ',';
+  HEADERS = lines[0].split(sep).map(h => h.trim());
+  ROWS = lines.slice(1).map(line => line.split(sep).map(v => v.trim()))
+               .filter(row => row.some(cell => cell));
+
+  document.getElementById('loadingMsg').style.display = 'none';
+  document.querySelector('.table-wrap').style.display = 'block';
+  document.getElementById('pagination').style.display = 'flex';
+  renderTable();
+}
+
+// =======================
+// RENDER DE LA TABLA
+// =======================
+function renderTable() {
+  const tbody = document.querySelector('#maestro tbody');
+  const thead = document.querySelector('#maestro thead');
+  const search = document.getElementById('searchInput').value.toLowerCase();
+
+  const filtered = ROWS.filter(r => r.some(v => String(v||'').toLowerCase().includes(search)));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * pageSize;
+  const pageRows = filtered.slice(start, start + pageSize);
+
+  thead.innerHTML = '<tr>' + HEADERS.map(h => `<th>${h}</th>`).join('') + '</tr>';
+  tbody.innerHTML = pageRows.map(r => '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('');
+  document.getElementById('pageInfo').innerText = `Página ${currentPage} / ${totalPages} (${filtered.length} registros)`;
+  document.getElementById('prevPage').disabled = currentPage <= 1;
+  document.getElementById('nextPage').disabled = currentPage >= totalPages;
+}
+
+// =======================
+// EVENTOS DE INTERFAZ
+// =======================
+document.getElementById('searchInput').addEventListener('input', () => { 
+  currentPage = 1; 
+  renderTable(); 
 });
 
-function showInstallBanner() {
-  const banner = document.getElementById('installBanner');
-  banner.style.display = 'block';
-}
+document.getElementById('prevPage').addEventListener('click', () => { 
+  if (currentPage > 1) { 
+    currentPage--; 
+    renderTable(); 
+  } 
+});
 
-function dismissInstall() {
-  const banner = document.getElementById('installBanner');
-  banner.style.display = 'none';
-}
+document.getElementById('nextPage').addEventListener('click', () => { 
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = ROWS.filter(r => r.some(v => String(v||'').toLowerCase().includes(search)));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  
+  if (currentPage < totalPages) { 
+    currentPage++; 
+    renderTable(); 
+  } 
+});
 
-async function installApp() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('✅ Usuario aceptó la instalación');
-      updateStatus('success', 'App instalada correctamente');
-    }
-    
-    deferredPrompt = null;
-    dismissInstall();
-  }
-}
-
-// ==============================
-// 🔄 NOTIFICACIÓN DE ACTUALIZACIÓN
-// ==============================
-function showUpdateNotification() {
-  if (confirm('¡Nueva versión disponible! ¿Quieres actualizar ahora?')) {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(registration => {
-        registration.active.postMessage({ type: 'SKIP_WAITING' });
-      });
-    }
-  }
-}
-
-// ==============================
-// 🧹 LIMPIAR CACHÉ MEJORADO
-// ==============================
-async function clearCache() {
+// =======================
+// FUNCIONES UTILITARIAS
+// =======================
+async function clearCacheAndReload() {
   try {
-    console.log('🧹 Iniciando limpieza de caché...');
-    updateStatus('sync', 'Limpiando caché...');
+    console.log('🧹 Limpiando caché...');
     
-    // 1. Desregistrar Service Workers
+    // Eliminar Service Workers
     if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const registration of registrations) {
-        await registration.unregister();
-        console.log('🗑️ Service Worker eliminado:', registration.scope);
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) {
+        await reg.unregister();
+        console.log('🗑️ Service Worker eliminado:', reg.scope);
       }
     }
 
-    // 2. Eliminar todas las cachés
+    // Eliminar cachés
     if ('caches' in window) {
       const cacheNames = await caches.keys();
       await Promise.all(cacheNames.map(name => caches.delete(name)));
       console.log('🧾 Cachés eliminadas:', cacheNames);
     }
 
-    // 3. Limpiar almacenamiento local
     localStorage.clear();
-    sessionStorage.clear();
-
-    console.log('✅ Caché limpiado completamente');
-    updateStatus('success', '✅ Caché limpiado correctamente');
-    
-    // 4. Recargar y reinstalar
-    setTimeout(() => {
-      if (confirm('✅ Caché limpiado. Se recargará la página para reinstalar la app.')) {
-        window.location.reload();
-      }
-    }, 1000);
-    
+    alert('✅ Caché limpiado correctamente. La aplicación se recargará.');
+    window.location.reload(true);
   } catch (err) {
     console.error('❌ Error al limpiar caché:', err);
-    updateStatus('error', '❌ Error al limpiar caché');
-    alert('⚠️ Error al limpiar caché. Intenta cerrar y abrir el navegador.');
+    alert('⚠️ Error al limpiar caché. Intenta cerrar y abrir la app nuevamente.');
   }
 }
 
-// ==============================
-// 🔍 VERIFICACIÓN MANUAL
-// ==============================
+// =======================
+// VERIFICACIÓN DE INSTALACIÓN
+// =======================
 async function verifyInstallation() {
-  updateStatus('sync', 'Verificando instalación...');
-  await verifyCacheStatus();
-}
-
-// ==============================
-// 🚀 INICIALIZACIÓN
-// ==============================
-async function initializeApp() {
-  console.log('🚀 Inicializando app...');
+  console.log('🔍 Verificando instalación...');
   
-  // Verificar si estamos online/offline
-  if (!navigator.onLine) {
-    updateStatus('warning', '🌐 Estás offline - Algunas funciones pueden no estar disponibles');
+  // Verificar si el CSV está en caché
+  try {
+    const cacheNames = await caches.keys();
+    console.log('📂 Cachés disponibles:', cacheNames);
+    
+    for (const cacheName of cacheNames) {
+      const cache = await caches.open(cacheName);
+      const keys = await cache.keys();
+      const csvCached = keys.some(req => req.url.includes('maestro.csv'));
+      
+      if (csvCached) {
+        console.log('✅ CSV encontrado en caché:', cacheName);
+        console.log('🗂️ Archivos en caché:', keys.map(k => new URL(k.url).pathname));
+        break;
+      }
+    }
+  } catch (err) {
+    console.error('❌ Error verificando caché:', err);
   }
-  
-  // Registrar Service Worker
-  await registerServiceWorker();
-  
-  // Verificación inicial después de más tiempo
-  setTimeout(() => {
-    verifyCacheStatus();
-  }, 4000);
 }
 
-// Iniciar cuando se carga la página
-document.addEventListener('DOMContentLoaded', initializeApp);
+// =======================
+// FORZAR PRECARGA AL ABRIR
+// =======================
+async function forcePreload() {
+  console.log('🚀 Forzando precarga de archivos...');
+  
+  try {
+    // Enviar mensaje al Service Worker para precargar
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'PRELOAD_CRITICAL'
+      });
+    }
+    
+    // Precargar directamente también
+    const criticalFiles = ['maestro.csv', 'service-worker.js'];
+    
+    for (const file of criticalFiles) {
+      try {
+        await fetch(file + '?preload=' + Date.now());
+        console.log('✅ Precargado:', file);
+      } catch (err) {
+        console.warn('⚠️ No se pudo precargar:', file);
+      }
+    }
+  } catch (err) {
+    console.error('❌ Error en precarga forzada:', err);
+  }
+}
+
+// =======================
+// VERIFICAR CONEXIÓN
+// =======================
+function checkConnection() {
+  if (!navigator.onLine) {
+    console.log('🌐 Modo offline detectado');
+    document.getElementById('offlineBanner').style.display = 'block';
+  }
+}
+
+// =======================
+// INICIAR
+// =======================
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🚀 Iniciando aplicación...');
+  checkConnection();
+  loadCSV();
+  
+  // Precargar archivos después de un breve delay
+  setTimeout(forcePreload, 1000);
+  setTimeout(verifyInstallation, 2000);
+});
 
 // Escuchar cambios de conexión
-window.addEventListener('online', () => {
-  updateStatus('success', '✅ Conexión restaurada - App lista');
-  verifyCacheStatus();
+window.addEventListener('online', function() {
+  console.log('🌐 Conexión restaurada');
+  document.getElementById('offlineBanner').style.display = 'none';
 });
 
-window.addEventListener('offline', () => {
-  updateStatus('warning', '🌐 Estás offline - Usando datos en caché');
+window.addEventListener('offline', function() {
+  console.log('🌐 Sin conexión');
+  document.getElementById('offlineBanner').style.display = 'block';
 });
-  </script>
+</script>
 </body>
 </html>
