@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.7.5'; // Incrementa la versión
+const CACHE_VERSION = 'v1.7.6'; // Incrementa la versión
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
