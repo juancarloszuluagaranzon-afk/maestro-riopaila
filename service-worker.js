@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.7.6';
+const CACHE_VERSION = 'v1.7.7';
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
