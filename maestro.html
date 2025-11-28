@@ -10,8 +10,6 @@
   --bg:#f7fafc;
   --accent:#0ea5a4;
   --header-bg:#e9eef0;
-  --edad-bg:#d1fae5; /* Verde claro */
-  --edad-text:#065f46; /* Verde oscuro */
 }
 body {
   margin:0;
@@ -69,7 +67,7 @@ input {
 table {
   border-collapse:collapse;
   width:100%;
-  min-width:800px;
+  min-width:900px;
 }
 th, td {
   padding:8px;
@@ -84,11 +82,6 @@ th {
   top:0;
   font-weight:600;
 }
-.edad-cell {
-  background: var(--edad-bg);
-  color: var(--edad-text);
-  font-weight: bold;
-}
 .loading {
   text-align:center;
   padding:40px;
@@ -101,28 +94,18 @@ th {
   border-radius:8px;
   margin:16px;
 }
-.update-banner {
-  background:#fef3c7;
-  border-left:4px solid #f59e0b;
-  padding:12px;
-  margin-bottom:16px;
-  border-radius:4px;
+
+/* 🔰 SOMBREADO VERDE PARA LA COLUMNA DE EDAD */
+td.edad-col {
+  background:#d9fbe5 !important;
+  font-weight:600;
+  color:#065f46;
 }
-.offline-banner {
-  background:#f0f9ff;
-  border-left:4px solid #0ea5e9;
-  padding:12px;
-  margin-bottom:16px;
-  border-radius:4px;
-}
-.update-banner button, .error button {
-  margin-left:12px;
-  background:var(--accent);
-  color:white;
-  border:none;
-  padding:6px 10px;
-  border-radius:6px;
-  cursor:pointer;
+
+th.edad-col {
+  background:#bbf7d0 !important;
+  color:#065f46;
+  font-weight:700;
 }
 </style>
 </head>
@@ -139,14 +122,6 @@ th {
 </header>
 
 <div class="container">
-  <div id="updateBanner" class="update-banner" style="display:none">
-    ⚠️ Hay una nueva versión disponible. 
-    <button onclick="updateApp()">Actualizar ahora</button>
-  </div>
-
-  <div id="offlineBanner" class="offline-banner" style="display:none">
-    📡 <strong>Modo offline:</strong> Mostrando datos en caché.
-  </div>
 
   <div class="controls">
     <label>Buscar: <input id="searchInput" placeholder="Buscar..."></label>
@@ -167,245 +142,172 @@ th {
     <span id="pageInfo"></span>
     <button id="nextPage">Siguiente →</button>
   </div>
+
 </div>
 
 <script>
-const CSV_FILE = 'maestro.csv';
+/* ==============================
+   CONFIGURACIÓN
+============================== */
+const CSV_FILE = "maestro.csv";
 let HEADERS = [];
 let ROWS = [];
 let currentPage = 1;
-let pageSize = 25;
+const pageSize = 25;
 
-/* ============================================================
-   FUNCIÓN: calcular meses entre fecha y hoy
-   ============================================================ */
-function mesesDesde(fechaStr) {
-  if (!fechaStr) return null;
-
-  // Normalizar: DD/MM/YYYY → YYYY-MM-DD
-  let parts;
-  if (fechaStr.includes('/')) parts = fechaStr.split('/');
-  else if (fechaStr.includes('-')) parts = fechaStr.split('-');
-  else return null;
-
-  if (parts.length !== 3) return null;
-
-  const [d, m, y] = parts.map(n => parseInt(n));
-  if (!y || !m || !d) return null;
-
-  const fecha = new Date(y, m - 1, d);
-  if (isNaN(fecha.getTime())) return null;
+/* ==============================
+   FUNCIÓN PARA CALCULAR EDAD
+============================== */
+function calcularEdad(fechaSiembra, fechaUltimoCorte) {
+  if (!fechaSiembra && !fechaUltimoCorte) return "";
 
   const hoy = new Date();
+
+  let dSiembra = fechaSiembra ? new Date(fechaSiembra) : null;
+  let dUltimo   = fechaUltimoCorte ? new Date(fechaUltimoCorte) : null;
+
+  let baseFecha;
+
+  // ⚡ LÓGICA SOLICITADA:
+  // Si último corte es mayor que siembra → usar último
+  if (dUltimo && dSiembra && dUltimo > dSiembra) {
+    baseFecha = dUltimo;
+  } else {
+    baseFecha = dSiembra;
+  }
+
+  if (!baseFecha || isNaN(baseFecha.getTime())) return "";
+
   let meses =
-    (hoy.getFullYear() - fecha.getFullYear()) * 12 +
-    (hoy.getMonth() - fecha.getMonth());
+    (hoy.getFullYear() - baseFecha.getFullYear()) * 12 +
+    (hoy.getMonth() - baseFecha.getMonth());
 
-  if (hoy.getDate() < fecha.getDate()) meses -= 1;
-  return Math.max(meses, 0);
+  if (meses < 0) meses = 0;
+
+  return meses;
+}
+/* ==============================
+   CARGA Y PARSEO DEL CSV
+============================== */
+async function loadCSV() {
+  try {
+    const response = await fetch(CSV_FILE + "?v=" + Date.now());
+    const text = await response.text();
+
+    const lines = text.split("\n").filter(l => l.trim() !== "");
+
+    // Detectar separador
+    const sep = lines[0].includes(";") ? ";" : ",";
+
+    HEADERS = lines[0].split(sep).map(h => h.trim());
+    ROWS = lines
+      .slice(1)
+      .map(line => line.split(sep).map(v => v.trim()));
+
+    // 📝 Insertar columna "Edad" en la posición #5 (índice 4)
+    HEADERS.splice(4, 0, "Edad (meses)");
+
+    // Procesar filas con cálculo de edad
+    ROWS = ROWS.map(r => {
+      const fechaSiembra = r[3];   // Asumido col 4
+      const fechaUltimo = r[4];    // Asumido col 5
+
+      const edad = calcularEdad(fechaSiembra, fechaUltimo);
+
+      r.splice(4, 0, edad); // Insertar edad en columna #5
+
+      return r;
+    });
+
+    document.getElementById("loadingMsg").style.display = "none";
+    document.querySelector(".table-wrap").style.display = "block";
+    document.getElementById("pagination").style.display = "flex";
+
+    renderTable();
+
+  } catch (err) {
+    console.error("Error cargando CSV:", err);
+    document.getElementById("loadingMsg").textContent = "Error cargando archivo.";
+  }
 }
 
-/* ============================================================
-   FUNCIÓN: cargar y procesar CSV
-   ============================================================ */
-function parseCSV(text) {
-  const lines = text.split('\n').filter(l => l.trim());
-  const sep = lines[0].includes(';') ? ';' : ',';
-
-  HEADERS = lines[0].split(sep).map(h => h.trim());
-
-  // Quitar columna EDAD del CSV si existe
-  const edadIndex = HEADERS.findIndex(h =>
-    h.toLowerCase().includes('edad')
-  );
-  if (edadIndex >= 0) HEADERS.splice(edadIndex, 1);
-
-  // Añadir nuestra columna calculada
-  HEADERS.push('Edad a hoy (meses)');
-
-  ROWS = lines.slice(1).map(line => {
-    const cols = line.split(sep).map(c => c.trim());
-
-    // Quitar EDAD original si existía
-    if (edadIndex >= 0) cols.splice(edadIndex, 1);
-
-    // Tomar fechas
-    const siembra = cols[HEADERS.indexOf('SIEMBRA')] || null;
-    const corte = cols[HEADERS.indexOf('ULTIMO_CORTE')] || null;
-
-    const mSiembra = mesesDesde(siembra);
-    const mCorte = mesesDesde(corte);
-
-    // Regla de cálculo
-    let edadHoy = 0;
-    if (mSiembra !== null && mCorte !== null)
-      edadHoy = Math.max(mSiembra, mCorte);
-    else if (mCorte !== null)
-      edadHoy = mCorte;
-    else if (mSiembra !== null)
-      edadHoy = mSiembra;
-
-    cols.push(String(edadHoy ?? ''));
-
-    return cols;
-  });
-
-  document.getElementById('loadingMsg').style.display = 'none';
-  document.querySelector('.table-wrap').style.display = 'block';
-  document.getElementById('pagination').style.display = 'flex';
-
-  renderTable();
-}
-/* ============================================================
-   RENDER DE TABLA (incluye color verde en columna de edad)
-   ============================================================ */
+/* ==============================
+   RENDER DE LA TABLA
+============================== */
 function renderTable() {
-  const tbody = document.querySelector('#maestro tbody');
-  const thead = document.querySelector('#maestro thead');
-  const search = document.getElementById('searchInput').value.toLowerCase();
+  const tbody = document.querySelector("#maestro tbody");
+  const thead = document.querySelector("#maestro thead");
+
+  const search = document.getElementById("searchInput").value.toLowerCase();
 
   const filtered = ROWS.filter(r =>
-    r.some(v => String(v || '').toLowerCase().includes(search))
+    r.some(v => String(v).toLowerCase().includes(search))
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   if (currentPage > totalPages) currentPage = totalPages;
+
   const start = (currentPage - 1) * pageSize;
   const pageRows = filtered.slice(start, start + pageSize);
 
-  // Render encabezado
-  thead.innerHTML = '<tr>' + HEADERS.map(h => `<th>${h}</th>`).join('') + '</tr>';
+  // === ENCABEZADOS ===
+  thead.innerHTML =
+    "<tr>" +
+    HEADERS.map((h, idx) =>
+      idx === 4
+        ? `<th class="edad-col">${h}</th>`
+        : `<th>${h}</th>`
+    ).join("") +
+    "</tr>";
 
-  // Índice de la nueva columna “Edad a hoy (meses)”
-  const edadIndex = HEADERS.indexOf('Edad a hoy (meses)');
-
-  // Render filas
+  // === FILAS ===
   tbody.innerHTML = pageRows
-    .map(row => {
+    .map(r => {
       return (
-        '<tr>' +
-        row
-          .map((c, i) => {
-            // Si es la columna de edad, aplicar fondo verde
-            if (i === edadIndex) {
-              return `<td class="edad-cell">${c}</td>`;
-            }
-            return `<td>${c}</td>`;
-          })
-          .join('') +
-        '</tr>'
+        "<tr>" +
+        r
+          .map((c, idx) =>
+            idx === 4
+              ? `<td class="edad-col">${c}</td>`
+              : `<td>${c}</td>`
+          )
+          .join("") +
+        "</tr>"
       );
     })
-    .join('');
+    .join("");
 
-  document.getElementById('pageInfo').innerText =
+  document.getElementById("pageInfo").textContent =
     `Página ${currentPage} / ${totalPages} (${filtered.length} registros)`;
 
-  document.getElementById('prevPage').disabled = currentPage <= 1;
-  document.getElementById('nextPage').disabled = currentPage >= totalPages;
+  document.getElementById("prevPage").disabled = currentPage <= 1;
+  document.getElementById("nextPage").disabled = currentPage >= totalPages;
 }
 
-/* ============================================================
-   EVENTOS DE INTERFAZ
-   ============================================================ */
-document.getElementById('searchInput').addEventListener('input', () => {
+/* ==============================
+   EVENTOS
+============================== */
+document.getElementById("searchInput").addEventListener("input", () => {
   currentPage = 1;
   renderTable();
 });
-document.getElementById('prevPage').addEventListener('click', () => {
+
+document.getElementById("prevPage").addEventListener("click", () => {
   if (currentPage > 1) {
     currentPage--;
     renderTable();
   }
 });
-document.getElementById('nextPage').addEventListener('click', () => {
-  const totalPages = Math.max(1, Math.ceil(ROWS.length / pageSize));
-  if (currentPage < totalPages) {
-    currentPage++;
-    renderTable();
-  }
+
+document.getElementById("nextPage").addEventListener("click", () => {
+  currentPage++;
+  renderTable();
 });
 
-/* ============================================================
-   MANEJO DE ERRORES Y REINTENTOS
-   ============================================================ */
-function showError(message) {
-  document.getElementById('loadingMsg').style.display = 'none';
-  const div = document.getElementById('errorMsg');
-  div.style.display = 'block';
-  div.innerHTML = `
-    <strong>Error:</strong> ${message}<br>
-    <small>Verifica la conexión o el archivo maestro.</small><br><br>
-    <button onclick="location.reload()">Reintentar</button>
-  `;
-}
-
-/* ============================================================
-   CARGA DEL CSV DESDE RED O CACHE
-   ============================================================ */
-async function loadCSV() {
-  try {
-    const response = await fetch(`${CSV_FILE}?v=${Date.now()}`, {
-      cache: 'no-store'
-    });
-
-    if (!response.ok) throw new Error('No se pudo cargar desde red');
-
-    const text = await response.text();
-    if (!text.trim()) throw new Error('Archivo CSV vacío');
-
-    parseCSV(text);
-    console.log('CSV cargado desde red');
-  } catch (err) {
-    console.warn('Fallo al cargar desde red → intentando caché…');
-
-    try {
-      const cached = await caches.match(CSV_FILE);
-      if (!cached) throw new Error('CSV no existe en caché');
-
-      const text = await cached.text();
-      parseCSV(text);
-      console.log('CSV cargado desde caché');
-    } catch (err2) {
-      showError('No se pudo cargar maestro.csv ni desde red ni desde caché.');
-    }
-  }
-}
-
-/* ============================================================
-   VERIFICACIÓN BÁSICA DE CACHE (opcional)
-   ============================================================ */
-async function verifyInstallation() {
-  try {
-    const cacheNames = await caches.keys();
-    console.log('Cachés:', cacheNames);
-
-    for (const name of cacheNames) {
-      const c = await caches.open(name);
-      const keys = await c.keys();
-      console.log(`Archivos en caché [${name}]:`, keys.map(k => k.url));
-    }
-  } catch (err) {
-    console.error('Error verificando caché:', err);
-  }
-}
-
-/* ============================================================
-   INICIALIZACIÓN
-   ============================================================ */
-document.addEventListener('DOMContentLoaded', () => {
-  loadCSV();
-});
-
-/* ============================================================
-   CAMBIOS DE CONEXIÓN
-   ============================================================ */
-window.addEventListener('online', () => {
-  document.getElementById('offlineBanner').style.display = 'none';
-});
-window.addEventListener('offline', () => {
-  document.getElementById('offlineBanner').style.display = 'block';
-});
+/* ==============================
+   INICIAR
+============================== */
+loadCSV();
 
 </script>
 </body>
