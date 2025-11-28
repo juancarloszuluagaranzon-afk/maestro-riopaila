@@ -170,22 +170,26 @@ function calcularEdad(fechaSiembra, fechaUltimoCorte) {
 
   // ⚡ LÓGICA SOLICITADA:
   // Si último corte es mayor que siembra → usar último
-  if (dUltimo && dSiembra && dUltimo > dSiembra) {
-    baseFecha = dUltimo;
-  } else {
-    baseFecha = dSiembra;
+ function calcularEdadExcel(fechaSiembra, fechaUltimoCorte, variedad) {
+  if (!fechaSiembra || variedad === "RENOVACION") return 0;
+
+  const fSiembra = new Date(fechaSiembra);
+  const fUltimo  = fechaUltimoCorte ? new Date(fechaUltimoCorte) : null;
+  const hoy = new Date();
+
+  const diasPorMes = 365.25 / 12;
+
+  // Si hay fecha de último corte y es mayor que siembra → usar fecha último corte
+  if (fUltimo && fUltimo > fSiembra) {
+    const diffMs = hoy - fUltimo;
+    return parseFloat((diffMs / 86400000 / diasPorMes).toFixed(1));
   }
 
-  if (!baseFecha || isNaN(baseFecha.getTime())) return "";
-
-  let meses =
-    (hoy.getFullYear() - baseFecha.getFullYear()) * 12 +
-    (hoy.getMonth() - baseFecha.getMonth());
-
-  if (meses < 0) meses = 0;
-
-  return meses;
+  // Si no hay último corte o siembra > último corte → usar siembra
+  const diffMs = hoy - fSiembra;
+  return parseFloat((diffMs / 86400000 / diasPorMes).toFixed(1));
 }
+
 /* ==============================
    CARGA Y PARSEO DEL CSV
 ============================== */
@@ -312,3 +316,5 @@ loadCSV();
 </script>
 </body>
 </html>
+
+
