@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Riopaila Agrícola – Maestro de Suertes</title>
+<style>
+:root {
+  --bg:#f7fafc;
+  --accent:#0ea5a4;
+  --header-bg:#e9eef0;
+}
+body {
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:var(--bg);
+  color:#0f172a;
+}
+header {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 16px;
+  background:var(--header-bg);
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+header img.logo {
+  width:48px;
+  height:48px;
+  object-fit:contain;
+  cursor:pointer;
+}
+header .title {
+  font-size:1.1rem;
+  font-weight:700;
+}
+header .update {
+  font-size:0.85rem;
+  color:#475569;
+}
+.container {
+  padding:16px;
+}
+.controls {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:12px;
+  align-items:center;
+}
+input {
+  padding:8px;
+  border-radius:8px;
+  border:1px solid #e6e9ee;
+  flex:1;
+  min-width:200px;
+}
+.table-wrap {
+  overflow-x:auto;
+  background:#fff;
+  border-radius:8px;
+  padding:8px;
+}
+table {
+  border-collapse:collapse;
+  width:100%;
+  min-width:800px;
+}
+th, td {
+  padding:8px;
+  border-bottom:1px solid #eef2f7;
+  white-space:nowrap;
+  text-align:left;
+  font-size:13px;
+}
+th {
+  background:#fbfeff;
+  position:sticky;
+  top:0;
+  font-weight:600;
+}
+.loading {
+  text-align:center;
+  padding:40px;
+  color:#64748b;
+}
+.error {
+  background:#fee;
+  color:#c00;
+  padding:12px;
+  border-radius:8px;
+  margin:16px;
+}
+.update-banner {
+  background:#fef3c7;
+  border-left:4px solid #f59e0b;
+  padding:12px;
+  margin-bottom:16px;
+  border-radius:4px;
+}
+.offline-banner {
+  background:#f0f9ff;
+  border-left:4px solid #0ea5e9;
+  padding:12px;
+  margin-bottom:16px;
+  border-radius:4px;
+}
+.update-banner button, .error button {
+  margin-left:12px;
+  background:var(--accent);
+  color:white;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
+}
+.update-banner button:hover, .error button:hover {
+  opacity:0.9;
+}
+@media (max-width:600px) {
+  input {
+    padding:6px;
+    font-size:14px;
+  }
+  th, td {
+    padding:6px;
+    font-size:12px;
+  }
+}
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html" title="Volver al inicio">
+    <img src="icon-192.png" class="logo" alt="logo" onerror="this.style.display='none'">
+  </a>
+  <div>
+    <div class="title">Riopaila Agrícola – Maestro de Suertes</div>
+    <div class="update">Última actualización: 11 de noviembre de 2025</div>
+  </div>
+</header>
+
+<div class="container">
+  <div id="updateBanner" class="update-banner" style="display:none">
+    ⚠️ Hay una nueva versión disponible. 
+    <button onclick="updateApp()">Actualizar ahora</button>
+  </div>
+
+  <div id="offlineBanner" class="offline-banner" style="display:none">
+    📡 <strong>Modo offline:</strong> Mostrando datos en caché. Algunos datos pueden no estar actualizados.
+  </div>
+
+  <div class="controls">
+    <label>Buscar: <input id="searchInput" placeholder="Buscar..."></label>
+  </div>
+
+  <div id="loadingMsg" class="loading">Cargando datos...</div>
+  <div id="errorMsg" class="error" style="display:none"></div>
+
+  <div class="table-wrap" style="display:none">
+    <table id="maestro">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="pagination" style="display:none;justify-content:center;align-items:center;gap:12px;margin:16px">
+    <button id="prevPage" class="primary">← Anterior</button>
+    <span id="pageInfo"></span>
+    <button id="nextPage" class="primary">Siguiente →</button>
+  </div>
+</div>
+
+<script>
+// =======================
+// CONFIGURACIÓN PRINCIPAL
+// =======================
+const APP_VERSION = 'v1.7.7';
+const CSV_FILE = 'maestro.csv';
+const CACHE_NAME = 'riopaila-maestro-v1.7.6';
+let HEADERS = [], ROWS = [];
+let currentPage = 1, pageSize = 25;
+let newWorkerWaiting = null;
+
+// =======================
+// SERVICE WORKER
+// =======================
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+    .then(reg => {
+      console.log('[SW] Registrado correctamente:', reg.scope);
+
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            newWorkerWaiting = newWorker;
+            document.getElementById('updateBanner').style.display = 'block';
+          }
+        });
+      });
+    })
+    .catch(err => console.error('[SW] Error al registrar:', err));
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    console.log('[SW] Nueva versión activada → recargando...');
+    setTimeout(() => window.location.reload(), 1000);
+  });
+}
+
+function updateApp() {
+  if (newWorkerWaiting) newWorkerWaiting.postMessage({ type: 'SKIP_WAITING' });
+}
+
+// =======================
+// CARGA DEL CSV - ESTRATEGIA MEJORADA
+// =======================
+async function loadCSV() {
+  // Mostrar que estamos intentando cargar
+  document.getElementById('loadingMsg').innerHTML = 
+    'Cargando datos...<br><small>Verificando conexión y caché</small>';
+
+  try {
+    console.log('[CSV] 🔄 Intentando cargar desde red...');
+    
+    // Intentar con timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    const response = await fetch(`${CSV_FILE}?v=${Date.now()}`, {
+      cache: 'no-store',
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const text = await response.text();
+    if (!text || text.trim().length === 0) {
+      throw new Error('CSV vacío o inválido');
+    }
+    
+    parseCSV(text);
+    console.log('[CSV] ✅ Cargado desde red correctamente');
+    document.getElementById('offlineBanner').style.display = 'none';
+    
+  } catch (error) {
+    console.warn('[CSV] 🌐 Red falló:', error.message, '- Buscando en caché...');
+    
+    try {
+      // Buscar en caché de forma más agresiva
+      let cached = await caches.match(CSV_FILE);
+      
+      // Si no encontramos, intentar con diferentes URLs
+      if (!cached) {
+        cached = await caches.match('/maestro.csv');
+      }
+      if (!cached) {
+        cached = await caches.match('./maestro.csv');
+      }
+      
+      if (cached) {
+        const text = await cached.text();
+        if (text && text.trim().length > 0) {
+          parseCSV(text);
+          console.log('[CSV] ✅ Cargado desde caché correctamente');
+          document.getElementById('offlineBanner').style.display = 'block';
+          return;
+        }
+      }
+      
+      // Último intento: buscar en cualquier caché
+      const cacheNames = await caches.keys();
+      for (const cacheName of cacheNames) {
+        const cache = await caches.open(cacheName);
+        const keys = await cache.keys();
+        const csvRequest = keys.find(req => 
+          req.url.includes('maestro.csv') || 
+          req.url.endsWith('/maestro.csv')
+        );
+        
+        if (csvRequest) {
+          const cached = await cache.match(csvRequest);
+          if (cached) {
+            const text = await cached.text();
+            if (text && text.trim().length > 0) {
+              parseCSV(text);
+              console.log('[CSV] ✅ Cargado desde caché alternativa:', cacheName);
+              document.getElementById('offlineBanner').style.display = 'block';
+              return;
+            }
+          }
+        }
+      }
+      
+      throw new Error('Sin conexión y sin datos en caché.');
+      
+    } catch (err) {
+      console.error('[CSV] ❌ Error crítico:', err);
+      showError(err.message);
+    }
+  }
+}
+
+function showError(message) {
+  document.getElementById('loadingMsg').style.display = 'none';
+  const errDiv = document.getElementById('errorMsg');
+  errDiv.style.display = 'block';
+  errDiv.innerHTML = `
+    <strong>Error:</strong> ${message}<br>
+    <small>Verifica tu conexión a internet o contacta al administrador.</small>
+    <br><br>
+    <button onclick="location.reload()">Reintentar</button>
+    <button onclick="clearCacheAndReload()" style="margin-left: 8px; background: #64748b;">Limpiar Caché</button>
+  `;
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n').filter(line => line.trim());
+  if (lines.length === 0) {
+    throw new Error('El archivo CSV está vacío');
+  }
+  
+  const sep = lines[0].includes(';') ? ';' : ',';
+  HEADERS = lines[0].split(sep).map(h => h.trim());
+  ROWS = lines.slice(1).map(line => line.split(sep).map(v => v.trim()))
+               .filter(row => row.some(cell => cell));
+
+  document.getElementById('loadingMsg').style.display = 'none';
+  document.querySelector('.table-wrap').style.display = 'block';
+  document.getElementById('pagination').style.display = 'flex';
+  renderTable();
+}
+
+// =======================
+// RENDER DE LA TABLA
+// =======================
+function renderTable() {
+  const tbody = document.querySelector('#maestro tbody');
+  const thead = document.querySelector('#maestro thead');
+  const search = document.getElementById('searchInput').value.toLowerCase();
+
+  const filtered = ROWS.filter(r => r.some(v => String(v||'').toLowerCase().includes(search)));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * pageSize;
+  const pageRows = filtered.slice(start, start + pageSize);
+
+  thead.innerHTML = '<tr>' + HEADERS.map(h => `<th>${h}</th>`).join('') + '</tr>';
+  tbody.innerHTML = pageRows.map(r => '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('');
+  document.getElementById('pageInfo').innerText = `Página ${currentPage} / ${totalPages} (${filtered.length} registros)`;
+  document.getElementById('prevPage').disabled = currentPage <= 1;
+  document.getElementById('nextPage').disabled = currentPage >= totalPages;
+}
+
+// =======================
+// EVENTOS DE INTERFAZ
+// =======================
+document.getElementById('searchInput').addEventListener('input', () => { 
+  currentPage = 1; 
+  renderTable(); 
+});
+
+document.getElementById('prevPage').addEventListener('click', () => { 
+  if (currentPage > 1) { 
+    currentPage--; 
+    renderTable(); 
+  } 
+});
+
+document.getElementById('nextPage').addEventListener('click', () => { 
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = ROWS.filter(r => r.some(v => String(v||'').toLowerCase().includes(search)));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  
+  if (currentPage < totalPages) { 
+    currentPage++; 
+    renderTable(); 
+  } 
+});
+
+// =======================
+// FUNCIONES UTILITARIAS
+// =======================
+async function clearCacheAndReload() {
+  try {
+    console.log('🧹 Limpiando caché...');
+    
+    // Eliminar Service Workers
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) {
+        await reg.unregister();
+        console.log('🗑️ Service Worker eliminado:', reg.scope);
+      }
+    }
+
+    // Eliminar cachés
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(name => caches.delete(name)));
+      console.log('🧾 Cachés eliminadas:', cacheNames);
+    }
+
+    localStorage.clear();
+    alert('✅ Caché limpiado correctamente. La aplicación se recargará.');
+    window.location.reload(true);
+  } catch (err) {
+    console.error('❌ Error al limpiar caché:', err);
+    alert('⚠️ Error al limpiar caché. Intenta cerrar y abrir la app nuevamente.');
+  }
+}
+
+// =======================
+// VERIFICACIÓN DE INSTALACIÓN
+// =======================
+async function verifyInstallation() {
+  console.log('🔍 Verificando instalación...');
+  
+  // Verificar si el CSV está en caché
+  try {
+    const cacheNames = await caches.keys();
+    console.log('📂 Cachés disponibles:', cacheNames);
+    
+    for (const cacheName of cacheNames) {
+      const cache = await caches.open(cacheName);
+      const keys = await cache.keys();
+      const csvCached = keys.some(req => req.url.includes('maestro.csv'));
+      
+      if (csvCached) {
+        console.log('✅ CSV encontrado en caché:', cacheName);
+        console.log('🗂️ Archivos en caché:', keys.map(k => new URL(k.url).pathname));
+        break;
+      }
+    }
+  } catch (err) {
+    console.error('❌ Error verificando caché:', err);
+  }
+}
+
+// =======================
+// FORZAR PRECARGA AL ABRIR
+// =======================
+async function forcePreload() {
+  console.log('🚀 Forzando precarga de archivos...');
+  
+  try {
+    // Enviar mensaje al Service Worker para precargar
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'PRELOAD_CRITICAL'
+      });
+    }
+    
+    // Precargar directamente también
+    const criticalFiles = ['maestro.csv', 'service-worker.js'];
+    
+    for (const file of criticalFiles) {
+      try {
+        await fetch(file + '?preload=' + Date.now());
+        console.log('✅ Precargado:', file);
+      } catch (err) {
+        console.warn('⚠️ No se pudo precargar:', file);
+      }
+    }
+  } catch (err) {
+    console.error('❌ Error en precarga forzada:', err);
+  }
+}
+
+// =======================
+// VERIFICAR CONEXIÓN
+// =======================
+function checkConnection() {
+  if (!navigator.onLine) {
+    console.log('🌐 Modo offline detectado');
+    document.getElementById('offlineBanner').style.display = 'block';
+  }
+}
+
+// =======================
+// INICIAR
+// =======================
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🚀 Iniciando aplicación...');
+  checkConnection();
+  loadCSV();
+  
+  // Precargar archivos después de un breve delay
+  setTimeout(forcePreload, 1000);
+  setTimeout(verifyInstallation, 2000);
+});
+
+// Escuchar cambios de conexión
+window.addEventListener('online', function() {
+  console.log('🌐 Conexión restaurada');
+  document.getElementById('offlineBanner').style.display = 'none';
+});
+
+window.addEventListener('offline', function() {
+  console.log('🌐 Sin conexión');
+  document.getElementById('offlineBanner').style.display = 'block';
+});
+</script>
+</body>
+</html>
