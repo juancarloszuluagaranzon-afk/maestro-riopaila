@@ -1,180 +1,181 @@
-const CACHE_VERSION = 'v1.7.7';
+const CACHE_VERSION = 'v1.7.9'; // Versión actualizada
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
-// Archivos CRÍTICOS que deben cachearse inmediatamente
+// Archivos CRÍTICOS (Deben estar para que la app arranque)
 const CRITICAL_URLS = [
   BASE,
   BASE + 'index.html',
-  BASE + 'maestro.html', 
-  BASE + 'maestro.csv', // ✅ CRÍTICO - debe estar aquí
+  BASE + 'maestro.html',
+  BASE + 'maestro.csv', // Datos vitales
   BASE + 'manifest.json',
-  BASE + 'service-worker.js', // ✅ IMPORTANTE - incluirse a sí mismo
+  BASE + 'service-worker.js',
   BASE + 'icon-192.png',
   BASE + 'icon-512.png'
 ];
 
-// Instalar - Estrategia más agresiva para cachear
+// ======================================================
+// 1. INSTALAR: Cacheo inicial robusto
+// ======================================================
 self.addEventListener('install', event => {
-  console.log('[SW] Instalando versión', CACHE_VERSION, 'con URLs:', CRITICAL_URLS);
-  
+  console.log('[SW] Instalando versión', CACHE_VERSION);
+
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
+      .then(async cache => {
         console.log('[SW] Cacheando archivos críticos...');
-        // Estrategia: cachear TODOS los archivos críticos sin importar errores
-        return Promise.allSettled(
-          CRITICAL_URLS.map(url => {
-            return fetch(url, { cache: 'reload' })
-              .then(response => {
-                if (response.ok) {
-                  return cache.put(url, response);
-                }
-                throw new Error(`HTTP ${response.status} for ${url}`);
-              })
-              .catch(err => {
-                console.warn(`[SW] No se pudo cachear ${url}:`, err.message);
-                // No rechazamos la promesa, continuamos con otros archivos
-                return Promise.resolve();
-              });
-          })
-        ).then(results => {
-          const successful = results.filter(r => r.status === 'fulfilled').length;
-          const failed = results.filter(r => r.status === 'rejected').length;
-          console.log(`[SW] Cacheo completado: ${successful} exitosos, ${failed} fallidos`);
-        });
+        
+        // Intentamos cachear todo, pero no detenemos la instalación si un icono falla
+        // (Mezcla de robustez de v1.7.7 con la limpieza de v1.7.8)
+        const promises = CRITICAL_URLS.map(url => 
+          fetch(url).then(res => {
+            if (res.ok) return cache.put(url, res.clone());
+            throw new Error(`Fallo al descargar ${url}`);
+          }).catch(err => console.warn('[SW] ⚠️', err.message))
+        );
+        
+        await Promise.all(promises);
       })
       .then(() => {
-        console.log('[SW] Activando inmediatamente...');
-        return self.skipWaiting(); // ⚡ Activación inmediata
-      })
-      .catch(err => {
-        console.error('[SW] Error crítico en instalación:', err);
+        console.log('[SW] Instalación completa. Esperando activación...');
+        return self.skipWaiting(); // Forzamos espera para activar
       })
   );
 });
 
-// Activar - Limpiar caches viejas inmediatamente
+// ======================================================
+// 2. ACTIVAR: Limpieza de versiones viejas
+// ======================================================
 self.addEventListener('activate', event => {
   console.log('[SW] Activando versión', CACHE_VERSION);
   
   event.waitUntil(
-    caches.keys().then(cacheNames => {
+    caches.keys().then(keys => {
       return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('[SW] Eliminando caché antigua:', cacheName);
-            return caches.delete(cacheName);
+        keys.map(key => {
+          if (key !== CACHE_NAME) {
+            console.log('[SW] 🗑 Eliminando caché obsoleta:', key);
+            return caches.delete(key);
           }
         })
       );
     }).then(() => {
-      console.log('[SW] Claiming clients...');
-      return self.clients.claim(); // ⚡ Tomar control inmediato
+      console.log('[SW] Ahora controlando clientes');
+      return self.clients.claim(); // Tomar control inmediato de las pestañas
     })
   );
 });
 
-// Fetch - Estrategia ultra-robusta
+// ======================================================
+// 3. FETCH: El Cerebro (Lógica Híbrida)
+// ======================================================
 self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // Solo manejar requests de nuestro origen
-  if (url.origin !== location.origin) {
-    return; // Dejar pasar requests externos
+  // Solo interceptamos nuestro propio origen
+  if (url.origin !== location.origin) return;
+
+  // A) ESTRATEGIA CSV: Stale-While-Revalidate (Velocidad máxima)
+  // Muestra lo que tiene guardado YA, y actualiza en segundo plano.
+  if (url.pathname.endsWith('maestro.csv')) {
+    event.respondWith(cacheFirstCSV(request));
+    return;
   }
 
-  // Estrategia: Network First con fallback agresivo a Cache
+  // B) ESTRATEGIA HTML/NAV: Network First + Fallback Robusto
+  // Intenta internet, si falla busca caché, si falla usa el maestro.html de respaldo.
+  if (request.mode === 'navigate' || url.pathname.endsWith('.html')) {
+    event.respondWith(networkFirstWithFallback(request));
+    return;
+  }
+
+  // C) RESTO DE RECURSOS (JS, CSS, IMG): Network First Simple
   event.respondWith(
     fetch(request)
-      .then(networkResponse => {
-        // Si la red responde, actualizar caché en segundo plano
-        if (networkResponse && networkResponse.status === 200) {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(request, clone).then(() => {
-              console.log('[SW] Actualizado en caché:', request.url);
-            });
-          });
+      .then(res => {
+        if (res && res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
         }
-        return networkResponse;
+        return res;
       })
-      .catch(async (error) => {
-        console.log('[SW] Red falló, buscando en caché:', request.url);
-        
-        // Buscar en caché
-        const cachedResponse = await caches.match(request);
-        
-        if (cachedResponse) {
-          console.log('[SW] ✅ Sirviendo desde caché (offline):', request.url);
-          return cachedResponse;
-        }
-        
-        // Estrategia de fallback para HTML
-        if (request.destination === 'document' || request.url.includes('.html')) {
-          console.log('[SW] 🆘 Fallback para HTML:', request.url);
-          const fallback = await caches.match('/maestro.html') || await caches.match('/index.html');
-          if (fallback) {
-            console.log('[SW] ✅ Sirviendo fallback HTML');
-            return fallback;
-          }
-        }
-        
-        // Estrategia de fallback para CSV
-        if (request.url.includes('.csv')) {
-          console.log('[SW] 🆘 Fallback para CSV');
-          const csvFallback = await caches.match('/maestro.csv');
-          if (csvFallback) {
-            console.log('[SW] ✅ Sirviendo CSV desde caché');
-            return csvFallback;
-          }
-        }
-        
-        console.error('[SW] ❌ No hay caché disponible para:', request.url);
-        return Promise.reject(new Error('Offline y sin caché disponible'));
-      })
+      .catch(() => caches.match(request))
   );
 });
 
-// Mensajes para control desde la UI
-self.addEventListener('message', event => {
-  console.log('[SW] Mensaje recibido:', event.data);
+// ======================================================
+// FUNCIONES AUXILIARES
+// ======================================================
+
+// Estrategia Especial para CSV (Prioridad: Velocidad)
+async function cacheFirstCSV(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+
+  if (cached) {
+    console.log('[SW] ⚡ Sirviendo CSV desde caché (actualizando en background)');
+    // Actualización en segundo plano ("Background Sync" manual)
+    fetch(request).then(res => {
+      if (res.ok) {
+        cache.put(request, res.clone());
+        console.log('[SW] 🔄 CSV actualizado en caché silenciosamente');
+      }
+    }).catch(err => console.log('[SW] Sin conexión para actualizar CSV'));
+    
+    return cached; // Retornamos inmediatamente el caché
+  }
+
+  // Si no hay caché, vamos a la red
+  try {
+    const network = await fetch(request);
+    if (network.ok) cache.put(request, network.clone());
+    return network;
+  } catch (err) {
+    console.error('[SW] ❌ CSV no disponible (ni red ni caché)');
+    throw err;
+  }
+}
+
+// Estrategia Especial para Navegación (Prioridad: Seguridad Offline)
+async function networkFirstWithFallback(request) {
+  try {
+    // 1. Intentar red
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, networkResponse.clone());
+      return networkResponse;
+    }
+  } catch (error) {
+    console.log('[SW] Red falló, buscando en caché:', request.url);
+  }
+
+  // 2. Intentar caché exacta
+  const cachedResponse = await caches.match(request);
+  if (cachedResponse) return cachedResponse;
+
+  // 3. FALLBACK DE EMERGENCIA (Recuperado de v1.7.7)
+  // Si el usuario recarga en una ruta interna y no tiene red, le damos el maestro.html
+  console.log('[SW] 🆘 Activando Fallback para HTML');
+  const cache = await caches.open(CACHE_NAME);
+  const fallback = await cache.match('/maestro.html') || await cache.match('/index.html');
   
-  switch (event.data?.type) {
-    case 'SKIP_WAITING':
-      console.log('[SW] Activación forzada solicitada');
-      self.skipWaiting();
-      break;
-      
-    case 'VERIFY_CACHE':
-      event.ports[0]?.postMessage({ 
-        type: 'CACHE_STATUS', 
-        cacheName: CACHE_NAME 
-      });
-      break;
-      
-    case 'PRELOAD_CRITICAL':
-      preloadCriticalFiles();
-      break;
+  if (fallback) return fallback;
+
+  // Si llegamos aquí, no hay nada que hacer
+  return new Response('Estás offline y esta página no está disponible.', {
+    status: 503,
+    statusText: 'Service Unavailable',
+    headers: new Headers({ 'Content-Type': 'text/plain' })
+  });
+}
+
+// ======================================================
+// MENSAJES (Para el botón "Nueva versión disponible")
+// ======================================================
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
 });
-
-// Función para precargar archivos críticos
-async function preloadCriticalFiles() {
-  console.log('[SW] Precargando archivos críticos...');
-  const cache = await caches.open(CACHE_NAME);
-  
-  for (const url of CRITICAL_URLS) {
-    try {
-      const response = await fetch(url, { cache: 'reload' });
-      if (response.ok) {
-        await cache.put(url, response);
-        console.log(`[SW] ✅ Precargado: ${url}`);
-      }
-    } catch (err) {
-      console.warn(`[SW] ❌ No se pudo precargar ${url}:`, err.message);
-    }
-  }
-  console.log('[SW] Precarga completada');
-}
