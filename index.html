@@ -1,8 +1,123 @@
+<!doctype html>
+<html lang="es" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1">
+<link rel="manifest" href="manifest.json">
+<title>Riopaila Agrícola</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+<style>
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+}
+body {
+  min-height: max(884px, 100dvh);
+  font-family: 'Manrope', sans-serif;
+}
+/* Estilos para el banner de instalación */
+.install-banner {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  z-index: 1000;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+.install-banner button {
+  background: #0ea5a4;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  margin: 0 4px;
+  cursor: pointer;
+}
+.install-banner button.secondary {
+  background: #64748b;
+}
+</style>
+</head>
+
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center min-h-screen p-6 relative overflow-hidden">
+  <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-teal-50 via-white to-slate-100 dark:from-slate-800 dark:via-slate-900 dark:to-black -z-10"></div>
+
+  <div id="installBanner" class="install-banner" style="display:none">
+    <div class="font-semibold mb-2">📱 Instalar App</div>
+    <div class="text-sm text-slate-300 mb-3">Instala la aplicación para uso offline</div>
+    <button onclick="installApp()">Instalar</button>
+    <button onclick="dismissInstall()" class="secondary">Más tarde</button>
+  </div>
+
+  <main class="w-full max-w-lg text-center bg-white dark:bg-slate-800/70 backdrop-blur-lg rounded-2xl shadow-xl p-10 border border-slate-200 dark:border-slate-700 relative">
+    
+   <div class="flex justify-center mb-6">
+  <img src="icon-512.png"
+       alt="Riopaila Agrícola"
+       class="w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 lg:w-64 lg:h-64 max-w-full object-contain">
+</div>
+
+    <h1 class="text-3xl font-extrabold tracking-tight mb-2 text-slate-900 dark:text-white">Riopaila Agrícola</h1>
+    <h2 class="text-lg font-medium text-slate-600 dark:text-slate-300 mb-3">Maestro de Suertes · Transformación Digital</h2>
+    <span class="inline-block bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300 px-4 py-1 rounded-full text-sm font-semibold mb-8">🌱 Innovando el campo</span>
+
+    <div id="installStatus" class="mb-6 p-4 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm">
+      <div class="flex items-center justify-center gap-2">
+        <span id="statusIcon" class="material-symbols-outlined text-teal-500">sync</span>
+        <span id="statusText">Inicializando aplicación...</span>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-4">
+      <button onclick="window.location.href='maestro.html'" class="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-400 hover:from-teal-500 hover:to-teal-300 text-white font-bold rounded-lg shadow-md transition-transform hover:scale-[1.02]">
+        📋 Abrir Maestro
+      </button>
+
+      <button onclick="clearCache()" class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg shadow transition-transform hover:scale-[1.02]">
+        🔄 Limpiar Caché
+      </button>
+
+      <button onclick="verifyInstallation()" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg shadow transition-transform hover:scale-[1.02]">
+        🔍 Verificar Instalación
+      </button>
+    </div>
+
+    <div class="mt-10 grid grid-cols-3 gap-4 text-center">
+      <div class="flex flex-col items-center gap-2">
+        <span class="material-symbols-outlined text-teal-500 text-3xl">bolt</span>
+        <p class="text-sm font-semibold">Rápido</p>
+      </div>
+      <div class="flex flex-col items-center gap-2">
+        <span class="material-symbols-outlined text-teal-500 text-3xl">shield</span>
+        <p class="text-sm font-semibold">Seguro</p>
+      </div>
+      <div class="flex flex-col items-center gap-2">
+        <span class="material-symbols-outlined text-teal-500 text-3xl">devices</span>
+        <p class="text-sm font-semibold">Offline</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
+    © 2025 Riopaila Agrícola S.A.S. — <span class="font-semibold text-teal-500">v1.7.9</span>
+  </footer>
+
+  <script>
 // ==============================
 // 🔧 CONFIGURACIÓN
 // ==============================
-const APP_VERSION = 'v1.7.9'; // Coherente con SW
-const CACHE_NAME = `riopaila-maestro-${APP_VERSION}`; // Corregido y dinámico
+const APP_VERSION = 'v1.7.9';
+const CACHE_NAME = `riopaila-maestro-${APP_VERSION}`; 
 let deferredPrompt = null;
 
 // ==============================
@@ -17,23 +132,20 @@ async function registerServiceWorker() {
   try {
     updateStatus('sync', 'Instalando aplicación...');
     
-    // Registrar el SW
     const registration = await navigator.serviceWorker.register('service-worker.js');
     console.log('[SW] Registrado correctamente:', registration.scope);
     
-    // Si el SW está instalando, esperar que se active para verificar la caché
     if (registration.installing) {
       registration.installing.addEventListener('statechange', () => {
         if (registration.installing.state === 'activated') {
           console.log('[SW] Activado y listo.');
-          verifyCacheStatus(); // Verificar después de activación
+          verifyCacheStatus(); 
         }
       });
     } else {
-      verifyCacheStatus(); // Si ya estaba activo, verificar inmediatamente
+      verifyCacheStatus(); 
     }
     
-    // Escuchar actualizaciones
     registration.addEventListener('updatefound', () => {
       const newWorker = registration.installing;
       newWorker.addEventListener('statechange', () => {
@@ -53,22 +165,18 @@ async function registerServiceWorker() {
 
 // ==============================
 // 📱 VERIFICACIÓN DE CACHÉ SIMPLIFICADA
-// (Confía en que el SW ya hizo su trabajo)
 // ==============================
 async function verifyCacheStatus() {
   try {
     console.log('🔍 Verificando estado final...');
     updateStatus('sync', 'Verificando caché...');
 
-    // Esperar a que el SW tome control
     await navigator.serviceWorker.ready;
     
-    // Verificar si el caché principal existe y tiene archivos
     const cache = await caches.open(CACHE_NAME);
     const keys = await cache.keys();
     
-    // Asumimos éxito si existe el caché y tiene más de 3 archivos esenciales
-    if (keys.length > 3) {
+    if (keys.length > 3) { // 3 archivos esenciales: index, maestro.html, SW.js.
       updateStatus('success', '✅ App lista para uso offline');
       console.log(`✅ ${keys.length} archivos en caché (${CACHE_NAME})`);
     } else {
@@ -84,7 +192,6 @@ async function verifyCacheStatus() {
 // 📊 ACTUALIZAR ESTADO EN UI
 // ==============================
 function updateStatus(type, message) {
-  // Implementación UI idéntica a tu código original
   const statusIcon = document.getElementById('statusIcon');
   const statusText = document.getElementById('statusText');
   const statusDiv = document.getElementById('installStatus');
@@ -155,7 +262,6 @@ function showUpdateNotification(newWorker) {
   const needsUpdate = confirm('¡Nueva versión disponible! ¿Quieres actualizar ahora?');
   
   if (needsUpdate) {
-    // Si el usuario confirma, le pedimos al SW que salte la espera
     if (newWorker) {
       newWorker.postMessage({ type: 'SKIP_WAITING' });
     }
@@ -167,7 +273,6 @@ function showUpdateNotification(newWorker) {
 // ==============================
 async function clearCache() {
   try {
-    //... (Lógica de limpieza idéntica a tu código original)
     console.log('🧹 Iniciando limpieza de caché...');
     updateStatus('sync', 'Limpiando caché...');
     
@@ -192,15 +297,15 @@ async function clearCache() {
     updateStatus('success', '✅ Caché limpiado completamente');
     
     setTimeout(() => {
-      if (confirm('✅ Caché limpiado. Se recargará la página para reinstalar la app.')) {
-        window.location.reload();
+      if (confirm('✅ Caché limpiado completamente. Se recargará la página para reinstalar la app.')) {
+        window.location.reload(true);
       }
-    }, 1000);
+    }, 500);
     
   } catch (err) {
     console.error('❌ Error al limpiar caché:', err);
     updateStatus('error', '❌ Error al limpiar caché');
-    alert('⚠️ Error al limpiar caché. Intenta cerrar y abrir el navegador.');
+    alert('⚠️ Error crítico al limpiar caché. Intenta cerrar y abrir el navegador.');
   }
 }
 
@@ -234,3 +339,6 @@ window.addEventListener('online', () => {
 window.addEventListener('offline', () => {
   updateStatus('warning', '🌐 Estás offline - Usando datos en caché');
 });
+  </script>
+</body>
+</html>
