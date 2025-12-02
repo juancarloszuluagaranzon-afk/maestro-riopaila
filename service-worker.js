@@ -1,22 +1,22 @@
-const CACHE_VERSION = 'v1.7.9'; // Versión actualizada
+const CACHE_VERSION = 'v1.7.9'; // He subido la versión para forzar la actualización
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
-// Archivos CRÍTICOS (Deben estar para que la app arranque)
+// Archivos esenciales para modo offline
 const CRITICAL_URLS = [
   BASE,
   BASE + 'index.html',
   BASE + 'maestro.html',
-  BASE + 'maestro.csv', // Datos vitales
+  BASE + 'maestro.csv',
   BASE + 'manifest.json',
   BASE + 'service-worker.js',
   BASE + 'icon-192.png',
   BASE + 'icon-512.png'
 ];
 
-// ======================================================
-// 1. INSTALAR: Cacheo inicial robusto
-// ======================================================
+// ===============================
+// 1. INSTALAR – Cacheo inicial
+// ===============================
 self.addEventListener('install', event => {
   console.log('[SW] Instalando versión', CACHE_VERSION);
 
@@ -24,156 +24,122 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(async cache => {
         console.log('[SW] Cacheando archivos críticos...');
-        
-        // Intentamos cachear todo, pero no detenemos la instalación si un icono falla
-        // (Mezcla de robustez de v1.7.7 con la limpieza de v1.7.8)
-        const promises = CRITICAL_URLS.map(url => 
-          fetch(url).then(res => {
-            if (res.ok) return cache.put(url, res.clone());
-            throw new Error(`Fallo al descargar ${url}`);
-          }).catch(err => console.warn('[SW] ⚠️', err.message))
-        );
-        
-        await Promise.all(promises);
+        // Usamos un bucle para intentar cachear uno por uno y reportar errores
+        for (const url of CRITICAL_URLS) {
+          try {
+            const response = await fetch(url);
+            if (response && response.ok) {
+              await cache.put(url, response.clone());
+            } else {
+              console.warn(`[SW] ⚠ No se pudo cachear ${url} (Status: ${response.status})`);
+            }
+          } catch (err) {
+            console.warn(`[SW] ⚠ Error de red al cachear ${url}:`, err.message);
+          }
+        }
       })
       .then(() => {
-        console.log('[SW] Instalación completa. Esperando activación...');
-        return self.skipWaiting(); // Forzamos espera para activar
+        console.log('[SW] Instalación completa. Saltando espera...');
+        return self.skipWaiting();
       })
   );
 });
 
-// ======================================================
-// 2. ACTIVAR: Limpieza de versiones viejas
-// ======================================================
+// ===============================
+// 2. ACTIVAR – Limpiar viejos caches
+// ===============================
 self.addEventListener('activate', event => {
   console.log('[SW] Activando versión', CACHE_VERSION);
-  
   event.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            console.log('[SW] 🗑 Eliminando caché obsoleta:', key);
-            return caches.delete(key);
+        keys.map(k => {
+          if (k !== CACHE_NAME) {
+            console.log('[SW] 🗑 Eliminando caché antigua:', k);
+            return caches.delete(k);
           }
         })
       );
     }).then(() => {
-      console.log('[SW] Ahora controlando clientes');
-      return self.clients.claim(); // Tomar control inmediato de las pestañas
+      console.log('[SW] Tomando control de clientes...');
+      return self.clients.claim();
     })
   );
 });
 
-// ======================================================
-// 3. FETCH: El Cerebro (Lógica Híbrida)
-// ======================================================
+// ===============================
+// 3. FETCH – La lógica híbrida (Lo mejor de ambos mundos)
+// ===============================
 self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // Solo interceptamos nuestro propio origen
+  // Solo interceptamos peticiones de nuestro propio dominio
   if (url.origin !== location.origin) return;
 
-  // A) ESTRATEGIA CSV: Stale-While-Revalidate (Velocidad máxima)
-  // Muestra lo que tiene guardado YA, y actualiza en segundo plano.
+  // A. ESTRATEGIA ESPECIAL PARA CSV (Prioridad: Velocidad)
+  // Muestra el dato viejo rápido mientras descarga el nuevo en segundo plano
   if (url.pathname.endsWith('maestro.csv')) {
     event.respondWith(cacheFirstCSV(request));
     return;
   }
 
-  // B) ESTRATEGIA HTML/NAV: Network First + Fallback Robusto
-  // Intenta internet, si falla busca caché, si falla usa el maestro.html de respaldo.
-  if (request.mode === 'navigate' || url.pathname.endsWith('.html')) {
-    event.respondWith(networkFirstWithFallback(request));
-    return;
-  }
-
-  // C) RESTO DE RECURSOS (JS, CSS, IMG): Network First Simple
+  // B. ESTRATEGIA GENERAL (Prioridad: Red fresca + Fallback robusto)
   event.respondWith(
     fetch(request)
       .then(res => {
+        // Si hay red y responde OK, actualizamos la caché
         if (res && res.ok) {
           const clone = res.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
         }
         return res;
       })
-      .catch(() => caches.match(request))
+      .catch(async () => {
+        console.log('[SW] Red falló, buscando en caché:', request.url);
+        
+        // 1. Intentar obtener el archivo exacto de la caché
+        const cachedResponse = await caches.match(request);
+        if (cachedResponse) return cachedResponse;
+
+        // 2. FALLBACK DE EMERGENCIA (Recuperado de v1.7.7)
+        // Si el usuario navega a una URL que no tiene caché, le damos el HTML principal
+        if (request.destination === 'document' || request.url.includes('.html')) {
+          console.log('[SW] 🆘 Sirviendo Fallback HTML');
+          const fallback = await caches.match('/maestro.html') || await caches.match('/index.html');
+          if (fallback) return fallback;
+        }
+
+        // Si no hay nada, no podemos hacer nada
+        return Promise.reject(new Error('Offline y sin contenido disponible'));
+      })
   );
 });
 
-// ======================================================
-// FUNCIONES AUXILIARES
-// ======================================================
+// ===============================
+// 4. FUNCIONES AUXILIARES
+// ===============================
 
-// Estrategia Especial para CSV (Prioridad: Velocidad)
+// Estrategia "Stale-While-Revalidate" para el CSV
 async function cacheFirstCSV(request) {
   const cache = await caches.open(CACHE_NAME);
-  const cached = await cache.match(request);
-
-  if (cached) {
-    console.log('[SW] ⚡ Sirviendo CSV desde caché (actualizando en background)');
-    // Actualización en segundo plano ("Background Sync" manual)
-    fetch(request).then(res => {
-      if (res.ok) {
-        cache.put(request, res.clone());
-        console.log('[SW] 🔄 CSV actualizado en caché silenciosamente');
-      }
-    }).catch(err => console.log('[SW] Sin conexión para actualizar CSV'));
-    
-    return cached; // Retornamos inmediatamente el caché
-  }
-
-  // Si no hay caché, vamos a la red
-  try {
-    const network = await fetch(request);
-    if (network.ok) cache.put(request, network.clone());
-    return network;
-  } catch (err) {
-    console.error('[SW] ❌ CSV no disponible (ni red ni caché)');
-    throw err;
-  }
-}
-
-// Estrategia Especial para Navegación (Prioridad: Seguridad Offline)
-async function networkFirstWithFallback(request) {
-  try {
-    // 1. Intentar red
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, networkResponse.clone());
-      return networkResponse;
-    }
-  } catch (error) {
-    console.log('[SW] Red falló, buscando en caché:', request.url);
-  }
-
-  // 2. Intentar caché exacta
-  const cachedResponse = await caches.match(request);
-  if (cachedResponse) return cachedResponse;
-
-  // 3. FALLBACK DE EMERGENCIA (Recuperado de v1.7.7)
-  // Si el usuario recarga en una ruta interna y no tiene red, le damos el maestro.html
-  console.log('[SW] 🆘 Activando Fallback para HTML');
-  const cache = await caches.open(CACHE_NAME);
-  const fallback = await cache.match('/maestro.html') || await cache.match('/index.html');
   
-  if (fallback) return fallback;
+  // Buscar en caché primero
+  const cached = await cache.match(request);
+  
+  // Lanzar petición de red en segundo plano para actualizar la próxima vez
+  const networkPromise = fetch(request).then(res => {
+    if (res.ok) {
+      cache.put(request, res.clone());
+      console.log('[SW] CSV actualizado en segundo plano');
+    }
+  }).catch(() => console.log('[SW] No se pudo actualizar CSV en segundo plano (Offline)'));
 
-  // Si llegamos aquí, no hay nada que hacer
-  return new Response('Estás offline y esta página no está disponible.', {
-    status: 503,
-    statusText: 'Service Unavailable',
-    headers: new Headers({ 'Content-Type': 'text/plain' })
-  });
+  // Si tenemos caché, la devolvemos YA (velocidad). Si no, esperamos a la red.
+  return cached || await fetch(request);
 }
 
-// ======================================================
-// MENSAJES (Para el botón "Nueva versión disponible")
-// ======================================================
+// Mensajes desde la UI (Botones de actualizar, etc.)
 self.addEventListener('message', event => {
   if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting();
