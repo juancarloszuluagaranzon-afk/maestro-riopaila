@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.7.9'; // He subido la versión para forzar la actualización
+const CACHE_VERSION = 'v1.8.1'; // He subido la versión para forzar la actualización
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
