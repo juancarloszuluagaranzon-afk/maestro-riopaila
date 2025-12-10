@@ -35,6 +35,10 @@
   td { padding:10px 12px; border-bottom:1px solid #f1f5f9; color:#334155; white-space:nowrap; }
   tr:last-child td { border-bottom:none; }
   tr:hover { background-color: #f8fafc; }
+  
+  /* Columna de Edad con fondo verde claro */
+  td.edad-cell { background-color: #d1fae5; font-weight: 600; color: #065f46; }
+  th.edad-header { background-color: #a7f3d0; color: #065f46; }
 
   /* Pagination */
   #pagination { display:none; justify-content:center; align-items:center; gap:16px; margin-top:20px; padding-bottom: 20px; }
@@ -63,7 +67,7 @@
   <img src="icon-192.png" class="logo" alt="Logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzBlYTVhNCIgZD0iTTEyIDJMNCA1djZWMTEuNWMwIDUuMjUgMy43NSA5Ljc1IDggMTAuNWM0LjI1LS43NSA4LTUuMjUgOC0xMC41VjVMMTIgMnpNMTAgMTdMNiAxM2wxLjQtMS40IDEuNiAxLjYgNS42LTUuNiAxLjQgMS40LTEwIDEweiIvPjwvc3ZnPg=='">
   <div class="info">
     <div class="title">Maestro de Suertes</div>
-    <div class="version" id="appVersion">v1.8.1 • Riopaila Agrícola</div>
+    <div class="version" id="appVersion">v1.8.2 • Riopaila Agrícola</div>
   </div>
 </header>
 
@@ -110,7 +114,7 @@
 // CONFIGURACIÓN
 // =======================
 const CONFIG = {
-  version: 'v1.8.1',
+  version: 'v1.8.2',
   csvFile: 'maestro.csv',
   pageSize: 25
 };
@@ -120,7 +124,8 @@ let STATE = {
   rows: [],
   filteredRows: [],
   currentPage: 1,
-  newWorker: null
+  newWorker: null,
+  edadColumnIndex: -1 // Índice de la columna de edad
 };
 
 // =======================
@@ -165,6 +170,76 @@ function applyUpdate() {
 // =======================
 // LÓGICA DE DATOS
 // =======================
+
+// Función para parsear fechas en formato DD/MM/YYYY o similar
+function parseFecha(fechaStr) {
+  if (!fechaStr || fechaStr === '' || fechaStr === '-') return null;
+  
+  // Limpiar espacios
+  fechaStr = fechaStr.trim();
+  
+  let fecha;
+  
+  // Formato DD/MM/YYYY (el más común en tu CSV)
+  if (fechaStr.includes('/')) {
+    const parts = fechaStr.split('/');
+    if (parts.length === 3) {
+      const dia = parseInt(parts[0]);
+      const mes = parseInt(parts[1]);
+      const anio = parseInt(parts[2]);
+      fecha = new Date(anio, mes - 1, dia);
+    }
+  }
+  // Formato DD-MM-YYYY
+  else if (fechaStr.includes('-') && fechaStr.split('-')[0].length <= 2) {
+    const parts = fechaStr.split('-');
+    if (parts.length === 3) {
+      const dia = parseInt(parts[0]);
+      const mes = parseInt(parts[1]);
+      const anio = parseInt(parts[2]);
+      fecha = new Date(anio, mes - 1, dia);
+    }
+  }
+  // Formato YYYY-MM-DD (ISO)
+  else if (fechaStr.includes('-')) {
+    fecha = new Date(fechaStr);
+  }
+  
+  return (fecha && !isNaN(fecha.getTime())) ? fecha : null;
+}
+
+// Calcular edad en meses según la fórmula de Excel
+// =SI(VARIEDAD="RENOVACION";0;SI(FECHA_ULTIMO_CORTE>FECHA_SIEMBRA;(HOY()-FECHA_ULTIMO_CORTE)/(365,25/12);(HOY()-FECHA_SIEMBRA)/(365,25/12)))
+function calcularEdad(row, variedadIdx, fechaSiembraIdx, fechaUltimoCorteIdx) {
+  const variedad = row[variedadIdx]?.toUpperCase() || '';
+  
+  // Si es RENOVACION, edad = 0
+  if (variedad === 'RENOVACION' || variedad === 'RENOVACIÓN') {
+    return '0.0';
+  }
+  
+  const fechaSiembra = parseFecha(row[fechaSiembraIdx]);
+  if (!fechaSiembra) return '-';
+  
+  const hoy = new Date();
+  let fechaReferencia = fechaSiembra; // Por defecto, usamos fecha de siembra
+  
+  // Si existe columna de último corte y tiene fecha válida
+  if (fechaUltimoCorteIdx !== -1 && row[fechaUltimoCorteIdx]) {
+    const fechaUltimoCorte = parseFecha(row[fechaUltimoCorteIdx]);
+    
+    // Si fecha de último corte > fecha de siembra, usamos último corte
+    if (fechaUltimoCorte && fechaUltimoCorte > fechaSiembra) {
+      fechaReferencia = fechaUltimoCorte;
+    }
+  }
+  
+  // Calcular diferencia en meses: (HOY - Fecha) / (365.25/12)
+  const diasDiferencia = (hoy - fechaReferencia) / (1000 * 60 * 60 * 24);
+  const meses = diasDiferencia / (365.25 / 12);
+  
+  return meses >= 0 ? meses.toFixed(1) : '0.0';
+}
 
 async function initApp() {
   checkConnection();
@@ -217,14 +292,47 @@ function processData(csvText) {
   const separator = lines[0].includes(';') ? ';' : ',';
   STATE.headers = lines[0].split(separator).map(h => h.trim());
   
+  // Identificar índices de columnas necesarias (nombres exactos de tu CSV)
+  const variedadIdx = STATE.headers.findIndex(h => 
+    h.toUpperCase().trim() === 'VARIEDAD'
+  );
+  const fechaSiembraIdx = STATE.headers.findIndex(h => 
+    h.toUpperCase().replace(/\s+/g, ' ').trim() === 'FECHA DE SIEMBRA' ||
+    h.toUpperCase().includes('FECHA') && h.toUpperCase().includes('SIEMBRA')
+  );
+  const fechaUltimoCorteIdx = STATE.headers.findIndex(h => 
+    h.toUpperCase().replace(/\s+/g, ' ').trim() === 'FECHA DE ULTIMO CORTE' ||
+    h.toUpperCase().replace(/\s+/g, ' ').trim() === 'FECHA DE ÚLTIMO CORTE' ||
+    (h.toUpperCase().includes('FECHA') && h.toUpperCase().includes('ULTIMO') && h.toUpperCase().includes('CORTE'))
+  );
+  
   // Procesamos filas (optimizando memoria)
   STATE.rows = [];
   for(let i=1; i < lines.length; i++) {
     const cells = lines[i].split(separator);
     // Solo agregamos si la fila tiene datos coherentes
     if (cells.length > 1) {
-      STATE.rows.push(cells.map(c => c.trim()));
+      const row = cells.map(c => c.trim());
+      
+      // Calcular edad en meses si tenemos las columnas necesarias
+      if (variedadIdx !== -1 && fechaSiembraIdx !== -1) {
+        const edad = calcularEdad(row, variedadIdx, fechaSiembraIdx, fechaUltimoCorteIdx);
+        row.push(edad);
+      }
+      
+      STATE.rows.push(row);
     }
+  }
+  
+  // Agregar columna "Edad (meses)" al header si se calculó
+  if (variedadIdx !== -1 && fechaSiembraIdx !== -1) {
+    STATE.headers.push('Edad (meses)');
+    STATE.edadColumnIndex = STATE.headers.length - 1; // Guardar índice de la columna edad
+    console.log('✅ Columna "Edad (meses)" agregada exitosamente');
+    console.log(`📊 Índices detectados: Variedad=${variedadIdx}, FechaSiembra=${fechaSiembraIdx}, FechaÚltimoCorte=${fechaUltimoCorteIdx}`);
+  } else {
+    console.warn('⚠️ No se pudieron detectar todas las columnas necesarias');
+    console.log(`Variedad: ${variedadIdx}, Fecha Siembra: ${fechaSiembraIdx}, Fecha Último Corte: ${fechaUltimoCorteIdx}`);
   }
 
   // Inicializar vista
@@ -247,9 +355,13 @@ function renderTable() {
   // Render Headers (solo una vez)
   if (!thead.hasChildNodes()) {
     const tr = document.createElement('tr');
-    STATE.headers.forEach(h => {
+    STATE.headers.forEach((h, index) => {
       const th = document.createElement('th');
       th.textContent = h;
+      // Aplicar clase especial a la columna Edad
+      if (index === STATE.edadColumnIndex) {
+        th.className = 'edad-header';
+      }
       tr.appendChild(th);
     });
     thead.appendChild(tr);
@@ -267,9 +379,13 @@ function renderTable() {
   
   pageData.forEach(row => {
     const tr = document.createElement('tr');
-    row.forEach(cell => {
+    row.forEach((cell, index) => {
       const td = document.createElement('td');
       td.textContent = cell;
+      // Aplicar clase especial a la columna Edad
+      if (index === STATE.edadColumnIndex) {
+        td.className = 'edad-cell';
+      }
       tr.appendChild(td);
     });
     fragment.appendChild(tr);
