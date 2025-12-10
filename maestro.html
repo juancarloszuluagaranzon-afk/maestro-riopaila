@@ -306,6 +306,17 @@ function processData(csvText) {
     (h.toUpperCase().includes('FECHA') && h.toUpperCase().includes('ULTIMO') && h.toUpperCase().includes('CORTE'))
   );
   
+  // Buscar la columna "EDAD HOY M" para reemplazarla
+  const edadHoyIdx = STATE.headers.findIndex(h => 
+    h.toUpperCase().replace(/\s+/g, ' ').trim() === 'EDAD HOY M' ||
+    h.toUpperCase().includes('EDAD') && h.toUpperCase().includes('HOY')
+  );
+  
+  if (edadHoyIdx !== -1) {
+    STATE.edadColumnIndex = edadHoyIdx;
+    console.log(`✅ Columna "EDAD HOY M" encontrada en índice ${edadHoyIdx} - será reemplazada con cálculo`);
+  }
+  
   // Procesamos filas (optimizando memoria)
   STATE.rows = [];
   for(let i=1; i < lines.length; i++) {
@@ -314,25 +325,22 @@ function processData(csvText) {
     if (cells.length > 1) {
       const row = cells.map(c => c.trim());
       
-      // Calcular edad en meses si tenemos las columnas necesarias
-      if (variedadIdx !== -1 && fechaSiembraIdx !== -1) {
+      // Reemplazar edad calculada si tenemos las columnas necesarias
+      if (variedadIdx !== -1 && fechaSiembraIdx !== -1 && edadHoyIdx !== -1) {
         const edad = calcularEdad(row, variedadIdx, fechaSiembraIdx, fechaUltimoCorteIdx);
-        row.push(edad);
+        row[edadHoyIdx] = edad; // Reemplazar el valor existente
       }
       
       STATE.rows.push(row);
     }
   }
   
-  // Agregar columna "Edad (meses)" al header si se calculó
-  if (variedadIdx !== -1 && fechaSiembraIdx !== -1) {
-    STATE.headers.push('Edad (meses)');
-    STATE.edadColumnIndex = STATE.headers.length - 1; // Guardar índice de la columna edad
-    console.log('✅ Columna "Edad (meses)" agregada exitosamente');
-    console.log(`📊 Índices detectados: Variedad=${variedadIdx}, FechaSiembra=${fechaSiembraIdx}, FechaÚltimoCorte=${fechaUltimoCorteIdx}`);
+  if (variedadIdx !== -1 && fechaSiembraIdx !== -1 && edadHoyIdx !== -1) {
+    console.log('✅ Cálculo de edad aplicado correctamente');
+    console.log(`📊 Índices: Variedad=${variedadIdx}, FechaSiembra=${fechaSiembraIdx}, FechaÚltimoCorte=${fechaUltimoCorteIdx}, EdadHoyM=${edadHoyIdx}`);
   } else {
     console.warn('⚠️ No se pudieron detectar todas las columnas necesarias');
-    console.log(`Variedad: ${variedadIdx}, Fecha Siembra: ${fechaSiembraIdx}, Fecha Último Corte: ${fechaUltimoCorteIdx}`);
+    console.log(`Variedad: ${variedadIdx}, Fecha Siembra: ${fechaSiembraIdx}, Fecha Último Corte: ${fechaUltimoCorteIdx}, Edad Hoy M: ${edadHoyIdx}`);
   }
 
   // Inicializar vista
