@@ -135,22 +135,32 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./service-worker.js')
     .then(reg => {
       // Detectar si hay una actualización esperando
-      if (reg.waiting) showUpdateBanner(reg.waiting);
+      if (reg.waiting) {
+        showUpdateBanner(reg.waiting);
+      }
 
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
+        
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
             showUpdateBanner(newWorker);
           }
         });
       });
-    });
+
+      // Revisar periódicamente si hay updates pendientes
+      setInterval(() => {
+        reg.update();
+      }, 60000); // Cada 1 minuto
+    })
+    .catch(err => console.error('Error registrando SW:', err));
 
   let refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!refreshing) {
       refreshing = true;
+      console.log('Service Worker actualizado, recargando...');
       window.location.reload();
     }
   });
@@ -163,7 +173,25 @@ function showUpdateBanner(worker) {
 
 function applyUpdate() {
   if (STATE.newWorker) {
+    // Cambiar el banner completo a estado "actualizando"
+    const banner = document.getElementById('updateBanner');
+    banner.innerHTML = `
+      <span style="display:flex;align-items:center;gap:8px;">
+        <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>
+        <strong>Actualizando aplicación...</strong>
+      </span>
+    `;
+    banner.style.background = '#dbeafe';
+    banner.style.borderColor = '#3b82f6';
+    banner.style.color = '#1e40af';
+    
+    // Enviar mensaje al Service Worker
     STATE.newWorker.postMessage({ type: 'SKIP_WAITING' });
+    
+    // Timeout de seguridad: si no se recarga en 3 segundos, forzar recarga
+    setTimeout(() => {
+      window.location.reload();
+    }, 3000);
   }
 }
 
