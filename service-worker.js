@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.8.2'; // He subido la versión para forzar la actualización
+const CACHE_VERSION = 'v1.8.3'; // Incrementa la versión cuando hagas cambios
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
@@ -39,8 +39,9 @@ self.addEventListener('install', event => {
         }
       })
       .then(() => {
-        console.log('[SW] Instalación completa. Saltando espera...');
-        return self.skipWaiting();
+        console.log('[SW] Instalación completa. ESPERANDO confirmación del usuario...');
+        // CAMBIO CRÍTICO: NO hacer skipWaiting automáticamente
+        // return self.skipWaiting(); // <-- REMOVIDO
       })
   );
 });
@@ -102,7 +103,7 @@ self.addEventListener('fetch', event => {
         const cachedResponse = await caches.match(request);
         if (cachedResponse) return cachedResponse;
 
-        // 2. FALLBACK DE EMERGENCIA (Recuperado de v1.7.7)
+        // 2. FALLBACK DE EMERGENCIA
         // Si el usuario navega a una URL que no tiene caché, le damos el HTML principal
         if (request.destination === 'document' || request.url.includes('.html')) {
           console.log('[SW] 🆘 Sirviendo Fallback HTML');
@@ -142,6 +143,7 @@ async function cacheFirstCSV(request) {
 // Mensajes desde la UI (Botones de actualizar, etc.)
 self.addEventListener('message', event => {
   if (event.data?.type === 'SKIP_WAITING') {
+    console.log('[SW] ✅ Usuario confirmó actualización. Activando nueva versión...');
     self.skipWaiting();
   }
 });
