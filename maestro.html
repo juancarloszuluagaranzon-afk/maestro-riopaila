@@ -307,7 +307,8 @@
       rows: [],
       filteredRows: [],
       currentPage: 1,
-      newWorker: null
+      newWorker: null,
+      edadColumnIndex: -1
     };
 
     // =======================
@@ -401,57 +402,82 @@
       const separator = lines[0].includes(';') ? ';' : ',';
       STATE.headers = lines[0].split(separator).map(h => h.trim());
 
-      // --- Indices for Calculation ---
-      const idxVariedad = STATE.headers.findIndex(h => h.toUpperCase().includes('VARIEDAD'));
-      const idxSiembra = STATE.headers.findIndex(h => h.toUpperCase().includes('FECHA') && h.toUpperCase().includes('SIEMBRA'));
-      const idxCorte = STATE.headers.findIndex(h => h.toUpperCase().includes('FECHA') && h.toUpperCase().includes('CORTE'));
+      // Identificar índices de columnas necesarias (nombres exactos de tu CSV)
+      const variedadIdx = STATE.headers.findIndex(h =>
+        h.toUpperCase().trim() === 'VARIEDAD'
+      );
+      const fechaSiembraIdx = STATE.headers.findIndex(h =>
+        h.toUpperCase().replace(/\s+/g, ' ').trim() === 'FECHA DE SIEMBRA' ||
+        h.toUpperCase().includes('FECHA') && h.toUpperCase().includes('SIEMBRA')
+      );
+      const fechaUltimoCorteIdx = STATE.headers.findIndex(h =>
+        h.toUpperCase().replace(/\s+/g, ' ').trim() === 'FECHA DE ULTIMO CORTE' ||
+        h.toUpperCase().replace(/\s+/g, ' ').trim() === 'FECHA DE ÚLTIMO CORTE' ||
+        (h.toUpperCase().includes('FECHA') && h.toUpperCase().includes('ULTIMO') && h.toUpperCase().includes('CORTE'))
+      );
 
-      // Add new header
-      STATE.headers.push("EDAD HOY MESES");
+      // Buscar la columna "EDAD" o "EDAD HOY M" para reemplazarla
+      const edadHoyIdx = STATE.headers.findIndex(h => {
+        const header = h.toUpperCase().trim();
+        return header === 'EDAD' ||
+          header === 'EDAD MESES' ||
+          (header.includes('EDAD') && !header.includes('VARIEDAD') && !header.includes('PROMEDIO'));
+      });
 
+      if (edadHoyIdx !== -1) {
+        STATE.edadColumnIndex = edadHoyIdx;
+        console.log(`✅ Columna "EDAD HOY M" encontrada en índice ${edadHoyIdx} - será reemplazada con cálculo`);
+      } else {
+        // Fallback: Si no existe, la agregamos (como antes)
+        STATE.headers.push("EDAD HOY MESES");
+        STATE.edadColumnIndex = STATE.headers.length - 1;
+      }
+
+      // Procesamos filas (optimizando memoria)
       STATE.rows = [];
       const now = new Date();
 
       for (let i = 1; i < lines.length; i++) {
         const cells = lines[i].split(separator);
+        // Solo agregamos si la fila tiene datos coherentes
         if (cells.length > 1) {
           const row = cells.map(c => c.trim());
 
-          // --- Calculation Logic ---
-          let edadMeses = 0;
-          try {
-            const variedad = idxVariedad > -1 ? row[idxVariedad].toUpperCase() : '';
-            const fechaSiembraStr = idxSiembra > -1 ? row[idxSiembra] : '';
-            const fechaCorteStr = idxCorte > -1 ? row[idxCorte] : '';
+          let edadMeses = '0.0';
 
-            // 1. Check Variedad
+          // --- Calculation Logic ---
+          try {
+            // ... Logic same as before, simplified for this block ...
+            const variedad = variedadIdx > -1 ? row[variedadIdx].toUpperCase() : '';
+            const fechaSiembraStr = fechaSiembraIdx > -1 ? row[fechaSiembraIdx] : '';
+            const fechaCorteStr = fechaUltimoCorteIdx > -1 ? row[fechaUltimoCorteIdx] : '';
+
             if (variedad === 'RENOVACION' || variedad === 'RENOVACIÓN') {
-              edadMeses = 0.0;
+              edadMeses = '0.0';
             } else {
-              // 2. Parse Dates
               const fechaSiembra = parseDate(fechaSiembraStr);
               const fechaCorte = parseDate(fechaCorteStr);
 
-              // 3. Determine Reference Date
               let fechaRef = fechaSiembra;
               if (fechaCorte && fechaSiembra && fechaCorte > fechaSiembra) {
                 fechaRef = fechaCorte;
               }
 
-              // 4. Calculate Difference
               if (fechaRef) {
                 const diffTime = Math.abs(now - fechaRef);
                 const daysDiff = diffTime / (1000 * 60 * 60 * 24);
-                // Formula: (HOY - FECHA_REFERENCIA) / (365.25 / 12)
-                edadMeses = daysDiff / (365.25 / 12);
+                edadMeses = (daysDiff / (365.25 / 12)).toFixed(1);
               }
             }
-          } catch (e) {
-            console.warn('Error calculating age for row', i, e);
+          } catch (e) { console.warn(e); }
+
+          // Reemplazar o Agregar
+          if (edadHoyIdx !== -1) {
+            row[edadHoyIdx] = edadMeses;
+          } else {
+            row.push(edadMeses);
           }
 
-          // Round to 1 decimal
-          row.push(edadMeses.toFixed(1));
           STATE.rows.push(row);
         }
       }
@@ -497,9 +523,17 @@
         thead.innerHTML = '';
 
         const tr = document.createElement('tr');
-        STATE.headers.forEach(h => {
+        STATE.headers.forEach((h, index) => {
           const th = document.createElement('th');
-          th.className = "px-6 py-4 whitespace-nowrap tracking-wider text-teal-400 font-bold bg-slate-900/90 shadow-sm";
+          let classes = "px-6 py-4 whitespace-nowrap tracking-wider font-bold bg-slate-900/90 shadow-sm";
+
+          if (index === STATE.edadColumnIndex) {
+            classes += " text-emerald-400 border-b-2 border-emerald-500/30";
+          } else {
+            classes += " text-teal-400";
+          }
+
+          th.className = classes;
           th.textContent = h;
           tr.appendChild(th);
         });
@@ -519,9 +553,19 @@
         tr.className = "hover:bg-white/5 transition-colors duration-150 group cursor-pointer active:bg-white/10";
         tr.onclick = () => showRowDetails(row);
 
-        row.forEach(cell => {
+        row.forEach((cell, index) => {
           const td = document.createElement('td');
-          td.className = "px-6 py-4 whitespace-nowrap group-hover:text-white transition-colors text-slate-400";
+          // Base classes
+          let classes = "px-6 py-4 whitespace-nowrap transition-colors";
+
+          // Styling for Age Column
+          if (index === STATE.edadColumnIndex) {
+            classes += " text-emerald-400 font-bold bg-emerald-900/10";
+          } else {
+            classes += " group-hover:text-white text-slate-400";
+          }
+
+          td.className = classes;
           td.textContent = cell;
           tr.appendChild(td);
         });
