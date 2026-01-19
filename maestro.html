@@ -1,506 +1,666 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" class="dark">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<meta name="theme-color" content="#0ea5a4">
-<meta name="description" content="Maestro de Suertes - Riopaila Agrícola">
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" href="icon-192.png">
-<title>Riopaila Agrícola – Maestro</title>
-<style>
-  :root { --bg:#f8fafc; --accent:#0ea5a4; --text:#0f172a; --header-bg:#ffffff; }
-  body { margin:0; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); -webkit-font-smoothing: antialiased; }
-  
-  /* Header estático y limpio */
-  header { display:flex; align-items:center; gap:12px; padding:12px 16px; background:var(--header-bg); position:sticky; top:0; z-index:100; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-  header img.logo { width:40px; height:40px; object-fit:contain; }
-  header .info { display:flex; flex-direction:column; }
-  header .title { font-size:1rem; font-weight:700; color:#1e293b; }
-  header .version { font-size:0.75rem; color:#64748b; }
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="description" content="Maestro de Suertes - Riopaila Agrícola">
+  <link rel="manifest" href="manifest.json">
+  <title>Riopaila Agrícola – Maestro</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+  <style>
+    :root {
+      --font-manrope: 'Manrope', sans-serif;
+    }
 
-  /* Contenedor principal */
-  .container { padding:16px; max-width: 1200px; margin: 0 auto; }
+    body {
+      font-family: var(--font-manrope);
+    }
 
-  /* Controles y Búsqueda */
-  .controls { margin-bottom:16px; }
-  input { width:100%; padding:12px; border-radius:10px; border:1px solid #cbd5e1; font-size:16px; box-sizing: border-box; transition: border 0.2s; }
-  input:focus { outline:none; border-color:var(--accent); box-shadow: 0 0 0 3px rgba(14, 165, 164, 0.1); }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
 
-  /* Tabla Responsiva */
-  .table-container { background:#fff; border-radius:10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow:hidden; display:none; }
-  .table-scroll { overflow-x:auto; }
-  table { border-collapse:collapse; width:100%; font-size:13px; }
-  th { background:#f1f5f9; color:#475569; font-weight:600; text-align:left; padding:12px; white-space:nowrap; position:sticky; top:0; }
-  td { padding:10px 12px; border-bottom:1px solid #f1f5f9; color:#334155; white-space:nowrap; }
-  tr:last-child td { border-bottom:none; }
-  tr:hover { background-color: #f8fafc; }
-  
-  /* Columna de Edad con fondo verde claro */
-  td.edad-cell { background-color: #d1fae5; font-weight: 600; color: #065f46; }
-  th.edad-header { background-color: #a7f3d0; color: #065f46; }
+    /* --- Aurora Background Animation (Identical to Index) --- */
+    .blob {
+      position: absolute;
+      filter: blur(80px);
+      z-index: -1;
+      opacity: 0.5;
+      animation: aurora 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-  /* Pagination */
-  #pagination { display:none; justify-content:center; align-items:center; gap:16px; margin-top:20px; padding-bottom: 20px; }
-  button.nav-btn { background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; font-size:14px; }
-  button.nav-btn:disabled { background:#cbd5e1; cursor:not-allowed; }
-  
-  /* Banners de Estado */
-  .banner { padding:12px; margin-bottom:16px; border-radius:8px; font-size:14px; display:none; animation: fadeIn 0.3s; }
-  .update-banner { background:#fffbeb; border:1px solid #fcd34d; color:#92400e; display:flex; justify-content:space-between; align-items:center; }
-  .offline-banner { background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; }
-  .error-banner { background:#fef2f2; border:1px solid #fecaca; color:#991b1b; text-align: center; }
-  
-  .btn-update { background:#d97706; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; margin-left: 10px; }
+    .blob-1 {
+      top: -10%;
+      left: -10%;
+      width: 60vw;
+      height: 60vh;
+      background: radial-gradient(circle, #0f766e 0%, transparent 70%);
+      animation-delay: 0s;
+    }
 
-  /* Loading */
-  .loading { text-align:center; padding:40px; color:#64748b; font-size: 1.1rem; }
-  .spinner { display:inline-block; width:24px; height:24px; border:3px solid rgba(14,165,164,0.3); border-radius:50%; border-top-color:var(--accent); animation: spin 1s ease-in-out infinite; margin-bottom: 10px; }
+    .blob-2 {
+      bottom: -10%;
+      right: -10%;
+      width: 50vw;
+      height: 50vh;
+      background: radial-gradient(circle, #0ea5e9 0%, transparent 70%);
+      animation-delay: -5s;
+    }
 
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes fadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
-</style>
+    .blob-3 {
+      top: 40%;
+      left: 40%;
+      width: 40vw;
+      height: 40vh;
+      background: radial-gradient(circle, #6366f1 0%, transparent 70%);
+      animation-delay: -10s;
+    }
+
+    @keyframes aurora {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.4;
+      }
+
+      100% {
+        transform: translate(-30px, 30px) scale(0.9);
+        opacity: 0.5;
+      }
+    }
+
+    /* --- Glassmorphism --- */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .glass-header {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Custom Table Scrollbar */
+    .custom-scroll::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  </style>
 </head>
-<body>
 
-<header>
-  <img src="icon-192.png" class="logo" alt="Logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzBlYTVhNCIgZD0iTTEyIDJMNCA1djZWMTEuNWMwIDUuMjUgMy43NSA5Ljc1IDggMTAuNWM0LjI1LS43NSA4LTUuMjUgOC0xMC41VjVMMTIgMnpNMTAgMTdMNiAxM2wxLjQtMS40IDEuNiAxLjYgNS42LTUuNiAxLjQgMS40LTEwIDEweiIvPjwvc3ZnPg=='">
-  <div class="info">
-    <div class="title">Maestro de Suertes</div>
-    <div class="version" id="appVersion">v1.8.4 • Riopaila Agrícola</div>
-  </div>
-</header>
+<body
+  class="bg-slate-950 text-slate-100 h-[100dvh] w-full overflow-hidden flex flex-col selection:bg-teal-500/30 selection:text-teal-200">
 
-<div class="container">
-  
-  <div id="updateBanner" class="banner update-banner">
-    <span>✨ Nueva versión disponible</span>
-    <button class="btn-update" onclick="applyUpdate()">Actualizar</button>
-  </div>
-  
-  <div id="offlineBanner" class="banner offline-banner">
-    📡 <strong>Modo Offline:</strong> Mostrando datos guardados.
+  <!-- Dynamic Background -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none">
+    <div class="blob blob-1 mix-blend-screen"></div>
+    <div class="blob blob-2 mix-blend-screen"></div>
+    <div class="blob blob-3 mix-blend-screen"></div>
+    <div class="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px]"></div>
   </div>
 
-  <div id="errorMsg" class="banner error-banner"></div>
+  <!-- Header (Static in Flex Layout) -->
+  <header class="glass-header shrink-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='index.html'">
+        <div
+          class="relative w-8 h-8 rounded-full bg-gradient-to-tr from-teal-500/20 to-emerald-500/20 flex items-center justify-center border border-white/10">
+          <img src="icon-192.png" alt="Logo" class="w-6 h-6 object-contain">
+        </div>
+        <div class="flex flex-col">
+          <h1 class="font-bold text-base leading-none tracking-tight text-white">Maestro de <span
+              class="text-teal-400">Suertes</span></h1>
+          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v1.8.5</span>
+        </div>
+      </div>
 
-  <div class="controls">
-    <input id="searchInput" type="search" placeholder="🔍 Buscar suerte, zona, código..." autocomplete="off">
-  </div>
+      <!-- Connection Status Indicator (Mini) -->
+      <div id="miniStatus"
+        class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700/50">
+        <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+        <span class="text-xs text-slate-300 font-medium">Online</span>
+      </div>
+    </div>
+  </header>
 
-  <div id="loadingMsg" class="loading">
-    <div class="spinner"></div><br>Cargando datos...
-  </div>
+  <!-- Main Content (Scrollable Container) -->
+  <main class="flex-1 flex flex-col max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 overflow-hidden relative z-10">
 
-  <div class="table-container">
-    <div class="table-scroll">
-      <table id="maestro">
-        <thead></thead>
-        <tbody></tbody>
-      </table>
+    <!-- Banners Container -->
+    <div class="space-y-4 mb-4 shrink-0">
+
+      <!-- Update Banner -->
+      <div id="updateBanner"
+        class="hidden glass-panel border-l-4 border-l-amber-500 p-4 rounded-xl flex items-center justify-between animate-fade-in-down">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-amber-400">system_update_alt</span>
+          <div class="flex flex-col">
+            <span class="text-sm font-bold text-white">Nueva versión disponible</span>
+            <span class="text-xs text-slate-300">Actualiza para ver los últimos cambios.</span>
+          </div>
+        </div>
+        <button onclick="applyUpdate()"
+          class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold rounded-lg shadow-lg shadow-amber-500/20 transition-all">
+          Actualizar
+        </button>
+      </div>
+
+      <!-- Offline Banner -->
+      <div id="offlineBanner"
+        class="hidden glass-panel border-l-4 border-l-blue-500 p-3 rounded-xl flex items-center gap-3 animate-fade-in-down">
+        <span class="material-symbols-outlined text-blue-400">wifi_off</span>
+        <span class="text-sm text-slate-200"><strong>Modo Offline:</strong> Mostrando datos guardados en el
+          dispositivo.</span>
+      </div>
+
+      <!-- Error Banner -->
+      <div id="errorMsg"
+        class="hidden glass-panel border-l-4 border-l-red-500 p-6 rounded-xl text-center animate-fade-in-down">
+        <!-- Content injected by JS -->
+      </div>
+
+    </div>
+
+    <!-- Search & Controls -->
+    <div class="mb-4 shrink-0">
+      <div class="relative group">
+        <div
+          class="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-emerald-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500">
+        </div>
+        <div
+          class="relative glass-panel rounded-2xl flex items-center px-4 py-3 transition-colors focus-within:border-teal-500/50 focus-within:bg-slate-900/80">
+          <span class="material-symbols-outlined text-slate-400 mr-3">search</span>
+          <input id="searchInput" type="search"
+            class="bg-transparent border-none text-white placeholder-slate-400 text-base w-full focus:ring-0 p-0"
+            placeholder="Buscar por suerte, zona, finca o código..." autocomplete="off">
+          <div class="hidden sm:flex text-xs text-slate-500 border border-slate-700/50 rounded px-2 py-1 ml-2">ESC para
+            limpiar</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+
+    <!-- Loading State -->
+    <div id="loadingMsg" class="flex flex-col items-center justify-center py-20 text-slate-400">
+      <div class="w-10 h-10 border-4 border-teal-500/30 border-t-teal-500 rounded-full animate-spin mb-4"></div>
+      <span class="text-sm font-medium animate-pulse">Cargando maestro de suertes...</span>
+    </div>
+
+    <!-- Data Table (Scrollable) -->
+    <div id="tableContainer"
+      class="hidden glass-panel rounded-2xl overflow-hidden flex flex-col shadow-2xl shadow-black/40 flex-1 min-h-0">
+      <div class="overflow-auto custom-scroll flex-1">
+        <table id="maestro" class="w-full text-left border-collapse">
+          <thead
+            class="bg-slate-900/50 text-xs uppercase text-slate-400 font-semibold sticky top-0 z-20 backdrop-blur-md">
+            <!-- Headers injected by JS -->
+          </thead>
+          <tbody class="divide-y divide-slate-800/50 text-sm text-slate-300">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer / Pagination -->
+      <div id="pagination"
+        class="border-t border-slate-700/30 bg-slate-900/30 p-4 flex items-center justify-between shrink-0">
+        <button id="prevPage"
+          class="flex items-center gap-1 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs font-bold uppercase tracking-wider">
+          <span class="material-symbols-outlined text-sm">chevron_left</span> Anterior
+        </button>
+
+        <span id="pageInfo"
+          class="text-xs font-mono text-teal-500/80 bg-teal-900/20 px-3 py-1 rounded-full border border-teal-500/10">
+          <!-- Page info -->
+        </span>
+
+        <button id="nextPage"
+          class="flex items-center gap-1 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs font-bold uppercase tracking-wider">
+          Siguiente <span class="material-symbols-outlined text-sm">chevron_right</span>
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Detail Modal -->
+  <div id="detailModal" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog"
+    aria-modal="true">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
+
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+      <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+
+        <!-- Modal Panel -->
+        <div
+          class="relative transform overflow-hidden rounded-2xl glass-panel text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-xl border border-white/10">
+
+          <!-- Header -->
+          <div
+            class="glass-header px-4 py-3 sm:px-6 flex justify-between items-center sticky top-0 z-10 bg-slate-900/80 backdrop-blur-md">
+            <h3 class="text-lg font-bold leading-6 text-white flex items-center gap-2">
+              <span class="material-symbols-outlined text-teal-400">info</span>
+              Detalle de la Suerte
+            </h3>
+            <button onclick="closeModal()"
+              class="rounded-full p-1 text-slate-400 hover:text-white hover:bg-white/10 transition-all">
+              <span class="material-symbols-outlined text-xl">close</span>
+            </button>
+          </div>
+
+          <!-- Content -->
+          <div class="px-4 py-5 sm:p-6 max-h-[70vh] overflow-y-auto custom-scroll">
+            <dl id="modalContent" class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+              <!-- Injected content -->
+            </dl>
+          </div>
+
+          <!-- Footer -->
+          <div class="bg-slate-900/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-white/5">
+            <button type="button"
+              class="mt-3 inline-flex w-full justify-center rounded-lg bg-white/5 px-3 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-white/10 sm:mt-0 sm:w-auto transition-all"
+              onclick="closeModal()">Cerrar</button>
+          </div>
+
+        </div>
+      </div>
     </div>
   </div>
 
-  <div id="pagination">
-    <button id="prevPage" class="nav-btn">Anterior</button>
-    <span id="pageInfo" style="font-size:14px;color:#475569;"></span>
-    <button id="nextPage" class="nav-btn">Siguiente</button>
-  </div>
+  <script>
+    // =======================
+    // CONFIGURACIÓN
+    // =======================
+    const CONFIG = {
+      version: 'v1.8.5',
+      csvFile: 'maestro.csv',
+      pageSize: 25
+    };
 
-</div>
+    let STATE = {
+      headers: [],
+      rows: [],
+      filteredRows: [],
+      currentPage: 1,
+      newWorker: null
+    };
 
-<script>
-// =======================
-// CONFIGURACIÓN
-// =======================
-const CONFIG = {
-  version: 'v1.8.4',
-  csvFile: 'maestro.csv',
-  pageSize: 25
-};
+    // =======================
+    // SERVICE WORKER
+    // =======================
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(reg => {
+          if (reg.waiting) showUpdateBanner(reg.waiting);
 
-let STATE = {
-  headers: [],
-  rows: [],
-  filteredRows: [],
-  currentPage: 1,
-  newWorker: null,
-  edadColumnIndex: -1 // Índice de la columna de edad
-};
-
-// =======================
-// SERVICE WORKER (Gestión de actualizaciones)
-// =======================
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./service-worker.js')
-    .then(reg => {
-      // Verificar si acabamos de actualizar
-      const justUpdated = sessionStorage.getItem('sw-just-updated');
-      if (justUpdated) {
-        console.log('✅ Actualización completada exitosamente');
-        sessionStorage.removeItem('sw-just-updated');
-        return; // No mostrar banner si acabamos de actualizar
-      }
-
-      // Detectar si hay una actualización esperando
-      if (reg.waiting) {
-        showUpdateBanner(reg.waiting);
-      }
-
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            showUpdateBanner(newWorker);
-          }
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                showUpdateBanner(newWorker);
+              }
+            });
+          });
         });
+
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+    }
+
+    function showUpdateBanner(worker) {
+      STATE.newWorker = worker;
+      document.getElementById('updateBanner').classList.remove('hidden');
+    }
+
+    function applyUpdate() {
+      if (STATE.newWorker) {
+        STATE.newWorker.postMessage({ type: 'SKIP_WAITING' });
+      }
+    }
+
+    // =======================
+    // LÓGICA DE DATOS
+    // =======================
+    async function initApp() {
+      checkConnection();
+      window.addEventListener('online', checkConnection);
+      window.addEventListener('offline', checkConnection);
+
+      // Keyboard shortcut for search
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          document.getElementById('searchInput').value = '';
+          document.getElementById('searchInput').dispatchEvent(new Event('input'));
+          document.getElementById('searchInput').blur();
+        }
       });
 
-      // Revisar periódicamente si hay updates pendientes
-      setInterval(() => {
-        reg.update();
-      }, 60000); // Cada 1 minuto
-    })
-    .catch(err => console.error('Error registrando SW:', err));
-
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) {
-      refreshing = true;
-      sessionStorage.setItem('sw-just-updated', 'true');
-      console.log('Service Worker actualizado, recargando...');
-      window.location.reload();
-    }
-  });
-}
-
-function showUpdateBanner(worker) {
-  STATE.newWorker = worker;
-  document.getElementById('updateBanner').style.display = 'flex';
-}
-
-function applyUpdate() {
-  if (STATE.newWorker) {
-    // Cambiar el banner completo a estado "actualizando"
-    const banner = document.getElementById('updateBanner');
-    banner.innerHTML = `
-      <span style="display:flex;align-items:center;gap:8px;">
-        <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>
-        <strong>Actualizando aplicación...</strong>
-      </span>
-    `;
-    banner.style.background = '#dbeafe';
-    banner.style.borderColor = '#3b82f6';
-    banner.style.color = '#1e40af';
-    
-    // Enviar mensaje al Service Worker
-    STATE.newWorker.postMessage({ type: 'SKIP_WAITING' });
-    
-    // Timeout de seguridad: si no se recarga en 3 segundos, forzar recarga
-    setTimeout(() => {
-      window.location.reload();
-    }, 3000);
-  }
-}
-
-// =======================
-// LÓGICA DE DATOS
-// =======================
-
-// Función para parsear fechas en formato DD/MM/YYYY o similar
-function parseFecha(fechaStr) {
-  if (!fechaStr || fechaStr === '' || fechaStr === '-') return null;
-  
-  // Limpiar espacios
-  fechaStr = fechaStr.trim();
-  
-  let fecha;
-  
-  // Formato DD/MM/YYYY (el más común en tu CSV)
-  if (fechaStr.includes('/')) {
-    const parts = fechaStr.split('/');
-    if (parts.length === 3) {
-      const dia = parseInt(parts[0]);
-      const mes = parseInt(parts[1]);
-      const anio = parseInt(parts[2]);
-      fecha = new Date(anio, mes - 1, dia);
-    }
-  }
-  // Formato DD-MM-YYYY
-  else if (fechaStr.includes('-') && fechaStr.split('-')[0].length <= 2) {
-    const parts = fechaStr.split('-');
-    if (parts.length === 3) {
-      const dia = parseInt(parts[0]);
-      const mes = parseInt(parts[1]);
-      const anio = parseInt(parts[2]);
-      fecha = new Date(anio, mes - 1, dia);
-    }
-  }
-  // Formato YYYY-MM-DD (ISO)
-  else if (fechaStr.includes('-')) {
-    fecha = new Date(fechaStr);
-  }
-  
-  return (fecha && !isNaN(fecha.getTime())) ? fecha : null;
-}
-
-// Calcular edad en meses según la fórmula de Excel
-// =SI(VARIEDAD="RENOVACION";0;SI(FECHA_ULTIMO_CORTE>FECHA_SIEMBRA;(HOY()-FECHA_ULTIMO_CORTE)/(365,25/12);(HOY()-FECHA_SIEMBRA)/(365,25/12)))
-function calcularEdad(row, variedadIdx, fechaSiembraIdx, fechaUltimoCorteIdx) {
-  const variedad = row[variedadIdx]?.toUpperCase() || '';
-  
-  // Si es RENOVACION, edad = 0
-  if (variedad === 'RENOVACION' || variedad === 'RENOVACIÓN') {
-    return '0.0';
-  }
-  
-  const fechaSiembra = parseFecha(row[fechaSiembraIdx]);
-  if (!fechaSiembra) return '-';
-  
-  const hoy = new Date();
-  let fechaReferencia = fechaSiembra; // Por defecto, usamos fecha de siembra
-  
-  // Si existe columna de último corte y tiene fecha válida
-  if (fechaUltimoCorteIdx !== -1 && row[fechaUltimoCorteIdx]) {
-    const fechaUltimoCorte = parseFecha(row[fechaUltimoCorteIdx]);
-    
-    // Si fecha de último corte > fecha de siembra, usamos último corte
-    if (fechaUltimoCorte && fechaUltimoCorte > fechaSiembra) {
-      fechaReferencia = fechaUltimoCorte;
-    }
-  }
-  
-  // Calcular diferencia en meses: (HOY - Fecha) / (365.25/12)
-  const diasDiferencia = (hoy - fechaReferencia) / (1000 * 60 * 60 * 24);
-  const meses = diasDiferencia / (365.25 / 12);
-  
-  return meses >= 0 ? meses.toFixed(1) : '0.0';
-}
-
-async function initApp() {
-  checkConnection();
-  window.addEventListener('online', checkConnection);
-  window.addEventListener('offline', checkConnection);
-
-  try {
-    // Intentamos Fetch normal. 
-    // El Service Worker interceptará esto automáticamente.
-    // Si hay internet -> Baja el nuevo y actualiza caché.
-    // Si no hay internet -> El SW devuelve el caché.
-    const response = await fetch(CONFIG.csvFile);
-    
-    if (!response.ok) throw new Error(`Error ${response.status}`);
-    
-    const text = await response.text();
-    processData(text);
-    
-  } catch (error) {
-    console.error('Fallo carga:', error);
-    // Si llegamos aquí, falló la red Y falló el caché del Service Worker.
-    // Intentamos un rescate manual del caché por si acaso.
-    tryFallbackCache();
-  }
-}
-
-async function tryFallbackCache() {
-  try {
-    const cache = await caches.match(CONFIG.csvFile);
-    if (cache) {
-      const text = await cache.text();
-      console.log('Recuperado mediante Fallback manual');
-      processData(text);
-      document.getElementById('offlineBanner').style.display = 'block';
-    } else {
-      showError('No se pudieron cargar los datos. Revisa tu conexión.');
-    }
-  } catch (e) {
-    showError('Error crítico: No hay datos disponibles.');
-  }
-}
-
-function processData(csvText) {
-  if (!csvText.trim()) return showError('El archivo de datos está vacío.');
-
-  const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
-  if (lines.length < 2) return showError('Formato de archivo inválido.');
-
-  // Parser simple pero efectivo
-  const separator = lines[0].includes(';') ? ';' : ',';
-  STATE.headers = lines[0].split(separator).map(h => h.trim());
-  
-  // Identificar índices de columnas necesarias (nombres exactos de tu CSV)
-  const variedadIdx = STATE.headers.findIndex(h => 
-    h.toUpperCase().trim() === 'VARIEDAD'
-  );
-  const fechaSiembraIdx = STATE.headers.findIndex(h => 
-    h.toUpperCase().replace(/\s+/g, ' ').trim() === 'FECHA DE SIEMBRA' ||
-    h.toUpperCase().includes('FECHA') && h.toUpperCase().includes('SIEMBRA')
-  );
-  const fechaUltimoCorteIdx = STATE.headers.findIndex(h => 
-    h.toUpperCase().replace(/\s+/g, ' ').trim() === 'FECHA DE ULTIMO CORTE' ||
-    h.toUpperCase().replace(/\s+/g, ' ').trim() === 'FECHA DE ÚLTIMO CORTE' ||
-    (h.toUpperCase().includes('FECHA') && h.toUpperCase().includes('ULTIMO') && h.toUpperCase().includes('CORTE'))
-  );
-  
-  // Buscar la columna "EDAD HOY M" para reemplazarla
-  const edadHoyIdx = STATE.headers.findIndex(h => 
-    h.toUpperCase().replace(/\s+/g, ' ').trim() === 'EDAD HOY M' ||
-    h.toUpperCase().includes('EDAD') && h.toUpperCase().includes('HOY')
-  );
-  
-  if (edadHoyIdx !== -1) {
-    STATE.edadColumnIndex = edadHoyIdx;
-    console.log(`✅ Columna "EDAD HOY M" encontrada en índice ${edadHoyIdx} - será reemplazada con cálculo`);
-  }
-  
-  // Procesamos filas (optimizando memoria)
-  STATE.rows = [];
-  for(let i=1; i < lines.length; i++) {
-    const cells = lines[i].split(separator);
-    // Solo agregamos si la fila tiene datos coherentes
-    if (cells.length > 1) {
-      const row = cells.map(c => c.trim());
-      
-      // Reemplazar edad calculada si tenemos las columnas necesarias
-      if (variedadIdx !== -1 && fechaSiembraIdx !== -1 && edadHoyIdx !== -1) {
-        const edad = calcularEdad(row, variedadIdx, fechaSiembraIdx, fechaUltimoCorteIdx);
-        row[edadHoyIdx] = edad; // Reemplazar el valor existente
+      try {
+        const response = await fetch(CONFIG.csvFile);
+        if (!response.ok) throw new Error(`Error ${response.status}`);
+        const text = await response.text();
+        processData(text);
+      } catch (error) {
+        console.error('Fallo carga:', error);
+        tryFallbackCache();
       }
-      
-      STATE.rows.push(row);
     }
-  }
-  
-  if (variedadIdx !== -1 && fechaSiembraIdx !== -1 && edadHoyIdx !== -1) {
-    console.log('✅ Cálculo de edad aplicado correctamente');
-    console.log(`📊 Índices: Variedad=${variedadIdx}, FechaSiembra=${fechaSiembraIdx}, FechaÚltimoCorte=${fechaUltimoCorteIdx}, EdadHoyM=${edadHoyIdx}`);
-  } else {
-    console.warn('⚠️ No se pudieron detectar todas las columnas necesarias');
-    console.log(`Variedad: ${variedadIdx}, Fecha Siembra: ${fechaSiembraIdx}, Fecha Último Corte: ${fechaUltimoCorteIdx}, Edad Hoy M: ${edadHoyIdx}`);
-  }
 
-  // Inicializar vista
-  STATE.filteredRows = [...STATE.rows];
-  document.getElementById('loadingMsg').style.display = 'none';
-  document.querySelector('.table-container').style.display = 'block';
-  document.getElementById('pagination').style.display = 'flex';
-  
-  renderTable();
-}
-
-// =======================
-// RENDERIZADO OPTIMIZADO
-// =======================
-
-function renderTable() {
-  const tbody = document.querySelector('#maestro tbody');
-  const thead = document.querySelector('#maestro thead');
-  
-  // Render Headers (solo una vez)
-  if (!thead.hasChildNodes()) {
-    const tr = document.createElement('tr');
-    STATE.headers.forEach((h, index) => {
-      const th = document.createElement('th');
-      th.textContent = h;
-      // Aplicar clase especial a la columna Edad
-      if (index === STATE.edadColumnIndex) {
-        th.className = 'edad-header';
+    async function tryFallbackCache() {
+      try {
+        const cache = await caches.match(CONFIG.csvFile);
+        if (cache) {
+          const text = await cache.text();
+          processData(text);
+          // Force logic to show offline banner even if navigator says online (cache mismatch)
+          document.getElementById('offlineBanner').classList.remove('hidden');
+        } else {
+          showError('No se pudieron cargar los datos.', 'Revisa tu conexión o asegúrate de haber abierto la app online al menos una vez.');
+        }
+      } catch (e) {
+        showError('Error Crítico', 'No se pudo acceder al almacenamiento local.');
       }
-      tr.appendChild(th);
+    }
+
+    function processData(csvText) {
+      if (!csvText.trim()) return showError('Datos Vacíos', 'El archivo maestro.csv está vacío.');
+
+      const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+      if (lines.length < 2) return showError('Formato Inválido', 'El archivo no tiene cabeceras o datos.');
+
+      const separator = lines[0].includes(';') ? ';' : ',';
+      STATE.headers = lines[0].split(separator).map(h => h.trim());
+
+      // --- Indices for Calculation ---
+      const idxVariedad = STATE.headers.findIndex(h => h.toUpperCase().includes('VARIEDAD'));
+      const idxSiembra = STATE.headers.findIndex(h => h.toUpperCase().includes('FECHA') && h.toUpperCase().includes('SIEMBRA'));
+      const idxCorte = STATE.headers.findIndex(h => h.toUpperCase().includes('FECHA') && h.toUpperCase().includes('CORTE'));
+
+      // Add new header
+      STATE.headers.push("EDAD HOY MESES");
+
+      STATE.rows = [];
+      const now = new Date();
+
+      for (let i = 1; i < lines.length; i++) {
+        const cells = lines[i].split(separator);
+        if (cells.length > 1) {
+          const row = cells.map(c => c.trim());
+
+          // --- Calculation Logic ---
+          let edadMeses = 0;
+          try {
+            const variedad = idxVariedad > -1 ? row[idxVariedad].toUpperCase() : '';
+            const fechaSiembraStr = idxSiembra > -1 ? row[idxSiembra] : '';
+            const fechaCorteStr = idxCorte > -1 ? row[idxCorte] : '';
+
+            // 1. Check Variedad
+            if (variedad === 'RENOVACION' || variedad === 'RENOVACIÓN') {
+              edadMeses = 0.0;
+            } else {
+              // 2. Parse Dates
+              const fechaSiembra = parseDate(fechaSiembraStr);
+              const fechaCorte = parseDate(fechaCorteStr);
+
+              // 3. Determine Reference Date
+              let fechaRef = fechaSiembra;
+              if (fechaCorte && fechaSiembra && fechaCorte > fechaSiembra) {
+                fechaRef = fechaCorte;
+              }
+
+              // 4. Calculate Difference
+              if (fechaRef) {
+                const diffTime = Math.abs(now - fechaRef);
+                const daysDiff = diffTime / (1000 * 60 * 60 * 24);
+                // Formula: (HOY - FECHA_REFERENCIA) / (365.25 / 12)
+                edadMeses = daysDiff / (365.25 / 12);
+              }
+            }
+          } catch (e) {
+            console.warn('Error calculating age for row', i, e);
+          }
+
+          // Round to 1 decimal
+          row.push(edadMeses.toFixed(1));
+          STATE.rows.push(row);
+        }
+      }
+
+      // Init View
+      STATE.filteredRows = [...STATE.rows];
+      document.getElementById('loadingMsg').style.display = 'none';
+      document.getElementById('loadingMsg').classList.add('hidden');
+      document.getElementById('tableContainer').classList.remove('hidden');
+
+      renderTable();
+    }
+
+    // Helper: Parse DD/MM/YYYY or YYYY-MM-DD
+    function parseDate(dateStr) {
+      if (!dateStr) return null;
+      // Handle DD/MM/YYYY
+      if (dateStr.includes('/')) {
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          // Assume DD/MM/YYYY
+          return new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+      }
+      // Handle YYYY-MM-DD
+      if (dateStr.includes('-')) {
+        return new Date(dateStr);
+      }
+      return null;
+    }
+
+    // =======================
+    // RENDERIZADO
+    // =======================
+    function renderTable() {
+      const tbody = document.querySelector('#maestro tbody');
+      const thead = document.querySelector('#maestro thead');
+
+      // Render Headers (Once)
+      // Fix: Check rows length instead of hasChildNodes because of comments/whitespace
+      if (thead.rows.length === 0) {
+        // Clear any text nodes/comments
+        thead.innerHTML = '';
+
+        const tr = document.createElement('tr');
+        STATE.headers.forEach(h => {
+          const th = document.createElement('th');
+          th.className = "px-6 py-4 whitespace-nowrap tracking-wider text-teal-400 font-bold bg-slate-900/90 shadow-sm";
+          th.textContent = h;
+          tr.appendChild(th);
+        });
+        thead.appendChild(tr);
+      }
+
+      // Pagination
+      const totalPages = Math.ceil(STATE.filteredRows.length / CONFIG.pageSize) || 1;
+      if (STATE.currentPage > totalPages) STATE.currentPage = 1;
+
+      const start = (STATE.currentPage - 1) * CONFIG.pageSize;
+      const pageData = STATE.filteredRows.slice(start, start + CONFIG.pageSize);
+
+      const fragment = document.createDocumentFragment();
+      pageData.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-white/5 transition-colors duration-150 group cursor-pointer active:bg-white/10";
+        tr.onclick = () => showRowDetails(row);
+
+        row.forEach(cell => {
+          const td = document.createElement('td');
+          td.className = "px-6 py-4 whitespace-nowrap group-hover:text-white transition-colors text-slate-400";
+          td.textContent = cell;
+          tr.appendChild(td);
+        });
+        fragment.appendChild(tr);
+      });
+
+      tbody.innerHTML = '';
+      tbody.appendChild(fragment);
+
+      // UI Updates
+      document.getElementById('pageInfo').textContent =
+        `PÁG ${STATE.currentPage} / ${totalPages} (${STATE.filteredRows.length})`;
+
+      document.getElementById('prevPage').disabled = STATE.currentPage === 1;
+      document.getElementById('nextPage').disabled = STATE.currentPage >= totalPages;
+    }
+
+    // =======================
+    // EVENTOS
+    // =======================
+    let searchTimeout;
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        const term = e.target.value.toLowerCase();
+        STATE.filteredRows = STATE.rows.filter(row =>
+          row.some(cell => cell.toLowerCase().includes(term))
+        );
+        STATE.currentPage = 1;
+        renderTable();
+      }, 300);
     });
-    thead.appendChild(tr);
-  }
 
-  // Paginación lógica
-  const totalPages = Math.ceil(STATE.filteredRows.length / CONFIG.pageSize) || 1;
-  if (STATE.currentPage > totalPages) STATE.currentPage = 1;
-  
-  const start = (STATE.currentPage - 1) * CONFIG.pageSize;
-  const pageData = STATE.filteredRows.slice(start, start + CONFIG.pageSize);
-
-  // Render Body usando DocumentFragment (Mejor rendimiento)
-  const fragment = document.createDocumentFragment();
-  
-  pageData.forEach(row => {
-    const tr = document.createElement('tr');
-    row.forEach((cell, index) => {
-      const td = document.createElement('td');
-      td.textContent = cell;
-      // Aplicar clase especial a la columna Edad
-      if (index === STATE.edadColumnIndex) {
-        td.className = 'edad-cell';
+    document.getElementById('prevPage').addEventListener('click', () => {
+      if (STATE.currentPage > 1) {
+        STATE.currentPage--;
+        renderTable();
       }
-      tr.appendChild(td);
     });
-    fragment.appendChild(tr);
-  });
 
-  tbody.innerHTML = ''; // Limpiar
-  tbody.appendChild(fragment); // Insertar de golpe
+    document.getElementById('nextPage').addEventListener('click', () => {
+      const totalPages = Math.ceil(STATE.filteredRows.length / CONFIG.pageSize);
+      if (STATE.currentPage < totalPages) {
+        STATE.currentPage++;
+        renderTable();
+      }
+    });
 
-  // Actualizar controles UI
-  document.getElementById('pageInfo').textContent = 
-    `Pág ${STATE.currentPage} de ${totalPages} (${STATE.filteredRows.length} registros)`;
-  
-  document.getElementById('prevPage').disabled = STATE.currentPage === 1;
-  document.getElementById('nextPage').disabled = STATE.currentPage >= totalPages;
-}
+    function checkConnection() {
+      const banner = document.getElementById('offlineBanner');
+      const miniStatus = document.getElementById('miniStatus');
 
-// =======================
-// EVENTOS Y UTILIDADES
-// =======================
+      if (navigator.onLine) {
+        banner.classList.add('hidden');
+        if (miniStatus) {
+          miniStatus.querySelector('div').className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+          miniStatus.querySelector('span').textContent = 'Online';
+        }
+      } else {
+        banner.classList.remove('hidden');
+        if (miniStatus) {
+          miniStatus.querySelector('div').className = 'w-2 h-2 rounded-full bg-amber-500';
+          miniStatus.querySelector('span').textContent = 'Offline';
+        }
+      }
+    }
 
-// Debounce para la búsqueda (Evita lentitud al escribir)
-let searchTimeout;
-document.getElementById('searchInput').addEventListener('input', (e) => {
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => {
-    const term = e.target.value.toLowerCase();
-    
-    // Filtrado
-    STATE.filteredRows = STATE.rows.filter(row => 
-      row.some(cell => cell.toLowerCase().includes(term))
-    );
-    
-    STATE.currentPage = 1;
-    renderTable();
-  }, 300); // Espera 300ms después de dejar de escribir
-});
+    function showError(title, msg) {
+      document.getElementById('loadingMsg').classList.add('hidden');
+      const el = document.getElementById('errorMsg');
+      el.innerHTML = `
+        <div class="flex flex-col items-center gap-4">
+          <div class="p-3 bg-red-500/20 rounded-full">
+            <span class="material-symbols-outlined text-red-400 text-3xl">error</span>
+          </div>
+          <div class="space-y-1">
+             <h3 class="text-lg font-bold text-white">${title}</h3>
+             <p class="text-slate-300 text-sm">${msg}</p>
+          </div>
+          <button onclick="location.reload()" class="mt-2 px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-lg shadow-red-600/20 font-semibold transition-all">
+            Reintentar
+          </button>
+        </div>
+      `;
+      el.classList.remove('hidden');
+    }
 
-document.getElementById('prevPage').addEventListener('click', () => {
-  if (STATE.currentPage > 1) {
-    STATE.currentPage--;
-    renderTable();
-    document.querySelector('.table-container').scrollTop = 0;
-  }
-});
+    // =======================
+    // MODAL
+    // =======================
+    function showRowDetails(row) {
+      const modal = document.getElementById('detailModal');
+      const content = document.getElementById('modalContent');
+      content.innerHTML = '';
 
-document.getElementById('nextPage').addEventListener('click', () => {
-  const totalPages = Math.ceil(STATE.filteredRows.length / CONFIG.pageSize);
-  if (STATE.currentPage < totalPages) {
-    STATE.currentPage++;
-    renderTable();
-    document.querySelector('.table-container').scrollTop = 0;
-  }
-});
+      STATE.headers.forEach((header, i) => {
+        const val = row[i] || '-';
 
-function checkConnection() {
-  const banner = document.getElementById('offlineBanner');
-  banner.style.display = navigator.onLine ? 'none' : 'block';
-}
+        const div = document.createElement('div');
+        div.className = "sm:col-span-1 p-3 rounded-lg bg-slate-800/30 border border-white/5 hover:bg-slate-800/50 transition-colors";
 
-function showError(msg) {
-  document.getElementById('loadingMsg').style.display = 'none';
-  const el = document.getElementById('errorMsg');
-  el.textContent = msg;
-  el.style.display = 'block';
-  el.innerHTML += '<br><br><button onclick="location.reload()" class="btn-update">Reintentar</button>';
-}
+        const dt = document.createElement('dt');
+        dt.className = "text-xs font-bold text-teal-400 uppercase tracking-wide mb-1";
+        dt.textContent = header;
 
-// Arrancar
-document.addEventListener('DOMContentLoaded', initApp);
+        const dd = document.createElement('dd');
+        dd.className = "mt-1 text-sm text-slate-200 break-words font-medium";
+        dd.textContent = val;
 
-</script>
+        div.appendChild(dt);
+        div.appendChild(dd);
+        content.appendChild(div);
+      });
+
+      modal.classList.remove('hidden');
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      document.getElementById('detailModal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('detailModal');
+        if (!modal.classList.contains('hidden')) {
+          closeModal();
+          // Stop propagation so search clear doesn't trigger immediately if focused (optional refinement)
+        }
+      }
+    });
+
+    // Start
+    document.addEventListener('DOMContentLoaded', initApp);
+
+  </script>
 </body>
+
 </html>

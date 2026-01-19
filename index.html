@@ -1,349 +1,444 @@
 <!doctype html>
 <html lang="es" class="dark">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1">
-<link rel="manifest" href="manifest.json">
-<title>Riopaila Agrícola</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com" rel="preconnect">
-<link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
-<style>
-.material-symbols-outlined {
-  font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
-}
-body {
-  /* ¡ELIMINADO! Dejamos que el contenido determine la altura. */
-  font-family: 'Manrope', sans-serif;
-}
-/* Estilos para el banner de instalación */
-.install-banner {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #0f172a;
-  color: white;
-  padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-  z-index: 1000;
-  max-width: 400px;
-  width: 90%;
-  text-align: center;
-}
-.install-banner button {
-  background: #0ea5a4;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  margin: 0 4px;
-  cursor: pointer;
-}
-.install-banner button.secondary {
-  background: #64748b;
-}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1">
+  <link rel="manifest" href="manifest.json">
+  <title>Riopaila Agrícola</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+  <style>
+    :root {
+      --font-manrope: 'Manrope', sans-serif;
+    }
+
+    body {
+      font-family: var(--font-manrope);
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+
+    /* --- Aurora Background Animation --- */
+    .blob {
+      position: absolute;
+      filter: blur(80px);
+      z-index: -1;
+      opacity: 0.5;
+      animation: aurora 15s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .blob-1 {
+      top: -10%;
+      left: -10%;
+      width: 60vw;
+      height: 60vh;
+      background: radial-gradient(circle, #0f766e 0%, transparent 70%);
+      animation-delay: 0s;
+    }
+
+    .blob-2 {
+      bottom: -10%;
+      right: -10%;
+      width: 50vw;
+      height: 50vh;
+      background: radial-gradient(circle, #0ea5e9 0%, transparent 70%);
+      animation-delay: -5s;
+    }
+
+    .blob-3 {
+      top: 40%;
+      left: 40%;
+      width: 40vw;
+      height: 40vh;
+      background: radial-gradient(circle, #6366f1 0%, transparent 70%);
+      animation-delay: -10s;
+    }
+
+    @keyframes aurora {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.4;
+      }
+
+      50% {
+        transform: translate(20px, -30px) scale(1.1);
+        opacity: 0.6;
+      }
+
+      100% {
+        transform: translate(-20px, 20px) scale(0.95);
+        opacity: 0.5;
+      }
+    }
+
+    /* --- Glassmorphism --- */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .glass-button {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+
+    .glass-button:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    /* --- Animations --- */
+    .animate-float-in {
+      animation: floatIn 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    .animate-delay-100 {
+      animation-delay: 100ms;
+    }
+
+    .animate-delay-200 {
+      animation-delay: 200ms;
+    }
+
+    .animate-delay-300 {
+      animation-delay: 300ms;
+    }
+
+    @keyframes floatIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* --- Custom Scrollbar for Install Toast --- */
+    .install-toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(150%);
+      z-index: 50;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .install-toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
 </head>
 
-<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center h-full p-6 relative overflow-hidden">
-  <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-teal-50 via-white to-slate-100 dark:from-slate-800 dark:via-slate-900 dark:to-black -z-10"></div>
+<body
+  class="bg-slate-950 text-slate-100 h-[100dvh] w-full overflow-hidden flex flex-col items-center justify-center relative selection:bg-teal-500/30 selection:text-teal-200">
 
-  <div id="installBanner" class="install-banner" style="display:none">
-    <div class="font-semibold mb-2">📱 Instalar App</div>
-    <div class="text-sm text-slate-300 mb-3">Instala la aplicación para uso offline</div>
-    <button onclick="installApp()">Instalar</button>
-    <button onclick="dismissInstall()" class="secondary">Más tarde</button>
+  <!-- Dynamic Background -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="blob blob-1 mix-blend-screen"></div>
+    <div class="blob blob-2 mix-blend-screen"></div>
+    <div class="blob blob-3 mix-blend-screen"></div>
+    <!-- Grain/Noise Texture Overlay could go here for extra premium feel -->
+    <div class="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px]"></div>
   </div>
 
-  <main class="w-full max-w-lg text-center bg-white dark:bg-slate-800/70 backdrop-blur-lg rounded-2xl shadow-xl p-10 border border-slate-200 dark:border-slate-700 relative">
-    
-   <div class="flex justify-center mb-6">
-  <img src="icon-512.png"
-       alt="Riopaila Agrícola"
-       class="w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 lg:w-64 lg:h-64 max-w-full object-contain">
-</div>
+  <!-- Status Pill (Top) -->
+  <div id="installStatus"
+    class="absolute top-8 animate-float-in glass-panel px-4 py-2 rounded-full flex items-center gap-3 transition-all duration-300">
+    <div class="relative flex h-2.5 w-2.5">
+      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+      <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-500"></span>
+    </div>
+    <span id="statusIcon" class="hidden material-symbols-outlined text-[16px]">sync</span>
+    <span id="statusText" class="text-xs font-semibold tracking-wide text-slate-300 uppercase">Iniciando...</span>
+  </div>
 
-    <h1 class="text-3xl font-extrabold tracking-tight mb-2 text-slate-900 dark:text-white">Riopaila Agrícola</h1>
-    <h2 class="text-lg font-medium text-slate-600 dark:text-slate-300 mb-3">Maestro de Suertes · Transformación Digital</h2>
-    <span class="inline-block bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300 px-4 py-1 rounded-full text-sm font-semibold mb-8">🌱 Innovando el campo</span>
+  <!-- Main Content Card -->
+  <main class="w-full max-w-sm px-6 relative z-10 flex flex-col items-center">
 
-    <div id="installStatus" class="mb-6 p-4 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm">
-      <div class="flex items-center justify-center gap-2">
-        <span id="statusIcon" class="material-symbols-outlined text-teal-500">sync</span>
-        <span id="statusText">Inicializando aplicación...</span>
+    <!-- Logo Section -->
+    <div class="mb-10 relative group animate-float-in animate-delay-100">
+      <div
+        class="absolute -inset-4 bg-gradient-to-tr from-teal-500/20 to-emerald-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition duration-700">
+      </div>
+      <div
+        class="relative w-28 h-28 glass-panel rounded-3xl flex items-center justify-center shadow-2xl shadow-black/20 transform group-hover:scale-105 transition duration-500">
+        <img src="icon-512.png" alt="Riopaila" class="w-20 h-20 object-contain drop-shadow-md">
       </div>
     </div>
 
-    <div class="flex flex-col gap-4">
-      <button onclick="window.location.href='maestro.html'" class="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-400 hover:from-teal-500 hover:to-teal-300 text-white font-bold rounded-lg shadow-md transition-transform hover:scale-[1.02]">
-        📋 Abrir Maestro
+    <!-- Typography -->
+    <div class="text-center mb-12 animate-float-in animate-delay-200">
+      <h1 class="text-3xl font-bold text-white mb-2 tracking-tight">
+        Riopaila <span
+          class="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-emerald-400">Agrícola</span>
+      </h1>
+      <p class="text-slate-400 font-medium text-base">Maestro de Suertes Offline</p>
+    </div>
+
+    <!-- Primary Action -->
+    <button onclick="window.location.href='maestro.html'"
+      class="animate-float-in animate-delay-300 group relative w-full h-16 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 rounded-2xl shadow-[0_0_40px_-10px_rgba(13,148,136,0.3)] transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] overflow-hidden flex items-center justify-between px-2">
+
+      <!-- Button background glow -->
+      <div
+        class="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out skew-x-12">
+      </div>
+
+      <span class="w-12 h-12 flex items-center justify-center bg-white/10 rounded-xl ml-1">
+        <span class="material-symbols-outlined text-white">table_view</span>
+      </span>
+
+      <span class="text-white font-bold text-lg tracking-wide mr-auto ml-4">Abrir Maestro</span>
+
+      <span
+        class="material-symbols-outlined text-white/50 group-hover:translate-x-1 transition-transform mr-4">arrow_forward</span>
+    </button>
+
+    <!-- Secondary Actions -->
+    <div class="animate-float-in animate-delay-300 mt-6 grid grid-cols-2 gap-4 w-full">
+      <button onclick="verifyInstallation()"
+        class="glass-button h-12 rounded-xl flex items-center justify-center gap-2 text-slate-300 hover:text-white text-sm font-medium">
+        <span class="material-symbols-outlined text-[18px]">verified_user</span>
+        <span>Verificar</span>
       </button>
 
-      <button onclick="clearCache()" class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg shadow transition-transform hover:scale-[1.02]">
-        🔄 Limpiar Caché
-      </button>
-
-      <button onclick="verifyInstallation()" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg shadow transition-transform hover:scale-[1.02]">
-        🔍 Verificar Instalación
+      <button onclick="clearCache()"
+        class="glass-button h-12 rounded-xl flex items-center justify-center gap-2 text-slate-300 hover:text-red-400 text-sm font-medium hover:border-red-500/30">
+        <span class="material-symbols-outlined text-[18px]">delete</span>
+        <span>Limpiar</span>
       </button>
     </div>
 
-    <div class="mt-10 grid grid-cols-3 gap-4 text-center">
-      <div class="flex flex-col items-center gap-2">
-        <span class="material-symbols-outlined text-teal-500 text-3xl">bolt</span>
-        <p class="text-sm font-semibold">Rápido</p>
-      </div>
-      <div class="flex flex-col items-center gap-2">
-        <span class="material-symbols-outlined text-teal-500 text-3xl">shield</span>
-        <p class="text-sm font-semibold">Seguro</p>
-      </div>
-      <div class="flex flex-col items-center gap-2">
-        <span class="material-symbols-outlined text-teal-500 text-3xl">devices</span>
-        <p class="text-sm font-semibold">Offline</p>
-      </div>
+    <!-- App Version -->
+    <div class="mt-12 text-slate-600 font-mono text-xs animate-float-in animate-delay-300">
+      v1.8.1 • Stable Build
     </div>
+
   </main>
 
-  <footer class="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
-    © 2025 Riopaila Agrícola S.A.S. — <span class="font-semibold text-teal-500">v1.7.9</span>
-  </footer>
+  <!-- Install Toast (Native Style) -->
+  <div id="installToast"
+    class="install-toast glass-panel p-4 pr-2 rounded-2xl flex items-center gap-4 min-w-[320px] shadow-2xl border-slate-700/50">
+    <div class="bg-teal-500/20 p-2 rounded-xl">
+      <span class="material-symbols-outlined text-teal-400">download</span>
+    </div>
+    <div class="flex flex-col mr-auto">
+      <span class="text-sm font-bold text-white leading-tight">Instalar App</span>
+      <span class="text-xs text-slate-400">Acceso rápido y sin conexión</span>
+    </div>
+    <div class="flex items-center gap-1">
+      <button onclick="dismissInstall()" class="p-2 hover:bg-white/5 rounded-lg text-slate-400 transition-colors">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+      <button onclick="installApp()"
+        class="px-4 py-2 bg-slate-100 hover:bg-white text-slate-900 text-xs font-bold rounded-lg transition-colors ml-1">
+        Instalar
+      </button>
+    </div>
+  </div>
 
   <script>
-// ==============================
-// 🔧 CONFIGURACIÓN
-// ==============================
-const APP_VERSION = 'v1.8.4';
-const CACHE_NAME = `riopaila-maestro-${APP_VERSION}`; 
-let deferredPrompt = null;
+    // ==============================
+    // 🔧 CONFIGURACIÓN
+    // ==============================
+    const APP_VERSION = 'v1.8.5';
+    const CACHE_NAME = `riopaila-maestro-${APP_VERSION}`;
+    let deferredPrompt = null;
 
-// ==============================
-// 🔧 Registro del Service Worker
-// ==============================
-async function registerServiceWorker() {
-  if (!('serviceWorker' in navigator)) {
-    updateStatus('warning', 'Navegador no soporta modo offline.');
-    return null;
-  }
-  
-  try {
-    updateStatus('sync', 'Instalando aplicación...');
-    
-    const registration = await navigator.serviceWorker.register('service-worker.js');
-    console.log('[SW] Registrado correctamente:', registration.scope);
-    
-    if (registration.installing) {
-      registration.installing.addEventListener('statechange', () => {
-        if (registration.installing.state === 'activated') {
-          console.log('[SW] Activado y listo.');
-          verifyCacheStatus(); 
+    // ==============================
+    // 🔧 Registro del Service Worker
+    // ==============================
+    async function registerServiceWorker() {
+      if (!('serviceWorker' in navigator)) {
+        updateStatus('warning', 'Navegador no compatible');
+        return;
+      }
+
+      try {
+        const registration = await navigator.serviceWorker.register('service-worker.js');
+
+        if (registration.installing) {
+          registration.installing.addEventListener('statechange', () => {
+            if (registration.installing.state === 'activated') verifyCacheStatus();
+          });
+        } else {
+          verifyCacheStatus();
         }
-      });
-    } else {
-      verifyCacheStatus(); 
+
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              if (confirm('¡Nueva versión disponible! ¿Actualizar?')) {
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+              }
+            }
+          });
+        });
+
+      } catch (err) {
+        console.error('[SW] Error:', err);
+        updateStatus('error', 'Error de instalación');
+      }
     }
-    
-    registration.addEventListener('updatefound', () => {
-      const newWorker = registration.installing;
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          showUpdateNotification(newWorker);
+
+    // ==============================
+    // 📱 VERIFICACIÓN DE CACHÉ
+    // ==============================
+    async function verifyCacheStatus() {
+      try {
+        await navigator.serviceWorker.ready;
+        const cache = await caches.open(CACHE_NAME);
+        const keys = await cache.keys();
+
+        if (keys.length > 3) {
+          updateStatus('success', 'Listo para usar offline');
+        } else {
+          updateStatus('sync', 'Descargando recursos...');
+          // Forzar un pequeño delay para que se vea la animación si es muy rápido
+          setTimeout(() => {
+            if (keys.length < 3) updateStatus('warning', 'Instalación pendiente');
+            else updateStatus('success', 'Listo para usar offline');
+          }, 2000);
         }
-      });
+      } catch (err) {
+        updateStatus('error', 'Error de caché');
+      }
+    }
+
+    // ==============================
+    // 📊 UI UPDATES
+    // ==============================
+    function updateStatus(type, message) {
+      const icon = document.getElementById('statusIcon');
+      const text = document.getElementById('statusText');
+      const div = document.getElementById('installStatus');
+      const ping = div.querySelector('.animate-ping'); // Find the ping animation to hide/show/color
+
+      text.textContent = message;
+
+      // Default State
+      div.className = 'absolute top-8 animate-float-in glass-panel px-4 py-2 rounded-full flex items-center gap-3 transition-all duration-300 border border-transparent';
+      icon.className = 'hidden material-symbols-outlined text-[16px]';
+      if (ping) ping.className = 'animate-ping absolute inline-flex h-full w-full rounded-full opacity-75';
+
+      switch (type) {
+        case 'success':
+          // Green/Teal
+          div.classList.add('border-teal-500/30', 'bg-teal-500/5');
+          text.classList.add('text-teal-400');
+          if (ping) ping.classList.add('bg-teal-400');
+          div.querySelector('.relative.inline-flex').classList.add('bg-teal-500');
+          break;
+        case 'warning':
+          // Amber/Yellow
+          div.classList.add('border-amber-500/30', 'bg-amber-500/5');
+          text.classList.remove('text-slate-300');
+          text.classList.add('text-amber-400');
+          if (ping) ping.classList.add('bg-amber-400');
+          div.querySelector('.relative.inline-flex').classList.remove('bg-teal-500');
+          div.querySelector('.relative.inline-flex').classList.add('bg-amber-500');
+          break;
+        case 'error':
+          // Red
+          div.classList.add('border-red-500/30', 'bg-red-500/5');
+          text.classList.remove('text-slate-300');
+          text.classList.add('text-red-400');
+          if (ping) ping.classList.add('bg-red-400');
+          div.querySelector('.relative.inline-flex').classList.remove('bg-teal-500');
+          div.querySelector('.relative.inline-flex').classList.add('bg-red-500');
+          break;
+        default: // sync
+          // Blue/Slate (Default)
+          text.classList.add('text-slate-300');
+          if (ping) ping.classList.add('bg-sky-400');
+          div.querySelector('.relative.inline-flex').classList.remove('bg-teal-500');
+          div.querySelector('.relative.inline-flex').classList.add('bg-sky-500');
+      }
+    }
+
+    // ==============================
+    // 📱 PWA INSTALL
+    // ==============================
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('installToast').classList.add('show');
     });
 
-    return registration;
-  } catch (err) {
-    console.error('[SW] Error al registrar:', err);
-    updateStatus('error', 'Error en la instalación.');
-    return null;
-  }
-}
-
-// ==============================
-// 📱 VERIFICACIÓN DE CACHÉ SIMPLIFICADA
-// ==============================
-async function verifyCacheStatus() {
-  try {
-    console.log('🔍 Verificando estado final...');
-    updateStatus('sync', 'Verificando caché...');
-
-    await navigator.serviceWorker.ready;
-    
-    const cache = await caches.open(CACHE_NAME);
-    const keys = await cache.keys();
-    
-    if (keys.length > 3) { // 3 archivos esenciales: index, maestro.html, SW.js.
-      updateStatus('success', '✅ App lista para uso offline');
-      console.log(`✅ ${keys.length} archivos en caché (${CACHE_NAME})`);
-    } else {
-      updateStatus('warning', '⚠️ Instalación incompleta. Recarga para intentar de nuevo.');
+    function dismissInstall() {
+      document.getElementById('installToast').classList.remove('show');
     }
-  } catch (err) {
-    console.error('❌ Error verificando caché:', err);
-    updateStatus('error', '❌ Error al acceder a caché.');
-  }
-}
 
-// ==============================
-// 📊 ACTUALIZAR ESTADO EN UI
-// ==============================
-function updateStatus(type, message) {
-  const statusIcon = document.getElementById('statusIcon');
-  const statusText = document.getElementById('statusText');
-  const statusDiv = document.getElementById('installStatus');
-  
-  statusText.textContent = message;
-  
-  statusDiv.className = 'mb-6 p-4 rounded-lg text-sm';
-  statusIcon.className = 'material-symbols-outlined';
-  
-  switch(type) {
-    case 'success':
-      statusDiv.classList.add('bg-green-100', 'dark:bg-green-900');
-      statusIcon.classList.add('text-green-500');
-      statusIcon.textContent = 'check_circle';
-      break;
-    case 'warning':
-      statusDiv.classList.add('bg-amber-100', 'dark:bg-amber-900');
-      statusIcon.classList.add('text-amber-500');
-      statusIcon.textContent = 'schedule';
-      break;
-    case 'error':
-      statusDiv.classList.add('bg-red-100', 'dark:bg-red-900');
-      statusIcon.classList.add('text-red-500');
-      statusIcon.textContent = 'error';
-      break;
-    default:
-      statusDiv.classList.add('bg-slate-100', 'dark:bg-slate-700');
-      statusIcon.classList.add('text-teal-500');
-      statusIcon.textContent = 'sync';
-  }
-}
-
-// ==============================
-// 📱 INSTALACIÓN DE PWA
-// ==============================
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  showInstallBanner();
-});
-
-function showInstallBanner() {
-  document.getElementById('installBanner').style.display = 'block';
-}
-
-function dismissInstall() {
-  document.getElementById('installBanner').style.display = 'none';
-}
-
-async function installApp() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      updateStatus('success', 'App instalada correctamente');
-    }
-    
-    deferredPrompt = null;
-    dismissInstall();
-  }
-}
-
-// ==============================
-// 🔄 NOTIFICACIÓN DE ACTUALIZACIÓN
-// ==============================
-function showUpdateNotification(newWorker) {
-  const needsUpdate = confirm('¡Nueva versión disponible! ¿Quieres actualizar ahora?');
-  
-  if (needsUpdate) {
-    if (newWorker) {
-      newWorker.postMessage({ type: 'SKIP_WAITING' });
-    }
-  }
-}
-
-// ==============================
-// 🧹 LIMPIAR CACHÉ (Función de emergencia)
-// ==============================
-async function clearCache() {
-  try {
-    console.log('🧹 Iniciando limpieza de caché...');
-    updateStatus('sync', 'Limpiando caché...');
-    
-    // 1. Desregistrar Service Workers
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const registration of registrations) {
-        await registration.unregister();
+    async function installApp() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          updateStatus('success', 'App instalada');
+        }
+        deferredPrompt = null;
+        dismissInstall();
       }
     }
 
-    // 2. Eliminar todas las cachés
-    if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map(name => caches.delete(name)));
+    // ==============================
+    // 🧹 UTILS
+    // ==============================
+    async function clearCache() {
+      if (!confirm('¿Seguro que deseas borrar los datos y reiniciar?')) return;
+
+      try {
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const registration of registrations) await registration.unregister();
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(key => caches.delete(key)));
+        }
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.reload();
+      } catch (err) {
+        alert('Error al limpiar');
+      }
     }
 
-    // 3. Limpiar almacenamiento local
-    localStorage.clear();
-    sessionStorage.clear();
-    
-    updateStatus('success', '✅ Caché limpiado completamente');
-    
-    setTimeout(() => {
-      if (confirm('✅ Caché limpiado completamente. Se recargará la página para reinstalar la app.')) {
-        window.location.reload(true);
-      }
-    }, 500);
-    
-  } catch (err) {
-    console.error('❌ Error al limpiar caché:', err);
-    updateStatus('error', '❌ Error al limpiar caché');
-    alert('⚠️ Error crítico al limpiar caché. Intenta cerrar y abrir el navegador.');
-  }
-}
+    function verifyInstallation() {
+      updateStatus('sync', 'Verificando...');
+      verifyCacheStatus();
+    }
 
-// ==============================
-// 🔍 VERIFICACIÓN MANUAL
-// ==============================
-async function verifyInstallation() {
-  updateStatus('sync', 'Verificando instalación...');
-  await verifyCacheStatus();
-}
+    // INIT
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!navigator.onLine) updateStatus('warning', 'Modo Offline');
+      registerServiceWorker();
+    });
 
-// ==============================
-// 🚀 INICIALIZACIÓN
-// ==============================
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 Inicializando app...');
-  
-  if (!navigator.onLine) {
-    updateStatus('warning', '🌐 Estás offline - Usando datos en caché');
-  }
-  
-  registerServiceWorker();
-});
+    window.addEventListener('online', () => {
+      updateStatus('success', 'Conexión restaurada');
+      verifyCacheStatus();
+    });
 
-// Escuchar cambios de conexión
-window.addEventListener('online', () => {
-  updateStatus('success', '✅ Conexión restaurada - App lista');
-  verifyCacheStatus();
-});
-
-window.addEventListener('offline', () => {
-  updateStatus('warning', '🌐 Estás offline - Usando datos en caché');
-});
+    window.addEventListener('offline', () => updateStatus('warning', 'Modo Offline'));
   </script>
 </body>
+
 </html>
-
-
-
-
-
