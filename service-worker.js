@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.8.6'; // Incrementa la versión cuando hagas cambios
+const CACHE_VERSION = 'v2.0.0'; // 2026 Edition
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
@@ -98,7 +98,7 @@ self.addEventListener('fetch', event => {
       })
       .catch(async () => {
         console.log('[SW] Red falló, buscando en caché:', request.url);
-        
+
         // 1. Intentar obtener el archivo exacto de la caché
         const cachedResponse = await caches.match(request);
         if (cachedResponse) return cachedResponse;
@@ -124,10 +124,10 @@ self.addEventListener('fetch', event => {
 // Estrategia "Stale-While-Revalidate" para el CSV
 async function cacheFirstCSV(request) {
   const cache = await caches.open(CACHE_NAME);
-  
+
   // Buscar en caché primero
   const cached = await cache.match(request);
-  
+
   // Lanzar petición de red en segundo plano para actualizar la próxima vez
   const networkPromise = fetch(request).then(res => {
     if (res.ok) {

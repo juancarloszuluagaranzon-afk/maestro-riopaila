@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --color-camaro-yellow: #FFD700;
+  --color-camaro-dark: #333333;
+  --color-camaro-green: #4CAF50;
+  --color-camaro-light: #F5F5F5;
+
+  --font-sans: 'Inter', 'sans-serif';
+}
+
+@layer base {
+  body {
+    @apply bg-camaro-light text-camaro-dark font-sans;
+  }
+}

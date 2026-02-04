@@ -17,77 +17,136 @@
   <style>
     :root {
       --font-manrope: 'Manrope', sans-serif;
+
+      /* Dark Theme (Default) */
+      --bg-body: #020617;
+      /* slate-950 */
+      --text-main: #f1f5f9;
+      /* slate-100 */
+      --text-muted: #94a3b8;
+      /* slate-400 */
+      /* Liquid Glass Dark */
+      --glass-bg: rgba(15, 23, 42, 0.65);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      /* Finer border */
+      --glass-shadow: rgba(0, 0, 0, 0.2);
+      --glass-inner-shadow: rgba(255, 255, 255, 0.03);
+      --header-bg: rgba(15, 23, 42, 0.85);
+      --input-bg: rgba(15, 23, 42, 0.5);
+      --input-text: #ffffff;
+      --table-header-bg: rgba(15, 23, 42, 0.95);
+      --table-header-text: #2dd4bf;
+      /* teal-400 */
+
+      --row-hover: rgba(255, 255, 255, 0.04);
+      --modal-bg: rgba(15, 23, 42, 0.85);
+
+      --success-bg: rgba(16, 185, 129, 0.1);
+      /* emerald-500/10 */
+      --success-text: #34d399;
+      /* emerald-400 */
+
+      --aurora-opacity: 0.6;
+      --aurora-blend: screen;
+    }
+
+    /* Light Theme Override */
+    :root.light {
+      --bg-body: #f0f4f8;
+      /* Softer slate */
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+
+      /* Liquid Glass Light */
+      --glass-bg: rgba(255, 255, 255, 0.65);
+      --glass-border: rgba(255, 255, 255, 0.6);
+      --glass-shadow: rgba(0, 0, 0, 0.05);
+      --glass-inner-shadow: rgba(255, 255, 255, 0.4);
+
+      --header-bg: rgba(255, 255, 255, 0.85);
+      --input-bg: rgba(255, 255, 255, 0.6);
+      --input-text: #0f172a;
+
+      --table-header-bg: rgba(248, 250, 252, 0.9);
+      --table-header-text: #0d9488;
+      /* teal-600 */
+
+      --row-hover: rgba(0, 0, 0, 0.03);
+      --modal-bg: rgba(255, 255, 255, 0.9);
+
+      --success-bg: rgba(16, 185, 129, 0.15);
+      --success-text: #059669;
+
+      --aurora-opacity: 0.5;
+      --aurora-blend: normal;
     }
 
     body {
       font-family: var(--font-manrope);
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s;
     }
 
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     }
 
-    /* --- Aurora Background Animation (Identical to Index) --- */
+    /* --- Aurora Background Animation (Shared) --- */
     .blob {
       position: absolute;
       filter: blur(80px);
       z-index: -1;
-      opacity: 0.5;
-      animation: aurora 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: var(--aurora-opacity);
+      mix-blend-mode: var(--aurora-blend);
+      transition: opacity 0.5s;
+      border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+      animation: fluidMove 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .blob-1 {
-      top: -10%;
-      left: -10%;
-      width: 60vw;
-      height: 60vh;
-      background: radial-gradient(circle, #0f766e 0%, transparent 70%);
-      animation-delay: 0s;
-    }
-
-    .blob-2 {
-      bottom: -10%;
-      right: -10%;
-      width: 50vw;
-      height: 50vh;
-      background: radial-gradient(circle, #0ea5e9 0%, transparent 70%);
-      animation-delay: -5s;
-    }
-
-    .blob-3 {
-      top: 40%;
-      left: 40%;
-      width: 40vw;
-      height: 40vh;
-      background: radial-gradient(circle, #6366f1 0%, transparent 70%);
-      animation-delay: -10s;
-    }
-
-    @keyframes aurora {
+    @keyframes fluidMove {
       0% {
-        transform: translate(0, 0) scale(1);
-        opacity: 0.4;
+        transform: translate(0, 0) rotate(0deg);
+      }
+
+      50% {
+        transform: translate(20px, -20px) rotate(5deg);
       }
 
       100% {
-        transform: translate(-30px, 30px) scale(0.9);
-        opacity: 0.5;
+        transform: translate(-15px, 15px) rotate(-5deg);
       }
     }
 
-    /* --- Glassmorphism --- */
+    /* --- Neoskeuomorphic Glass --- */
     .glass-panel {
-      background: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      background: var(--glass-bg);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--glass-border);
+      box-shadow:
+        0 8px 32px 0 var(--glass-shadow),
+        inset 0 1px 0 var(--glass-inner-shadow);
+      transition: background 0.3s, border 0.3s, box-shadow 0.3s;
+    }
+
+    .hover-row:hover {
+      background-color: var(--row-hover);
     }
 
     .glass-header {
-      background: rgba(15, 23, 42, 0.85);
+      background: var(--header-bg);
       backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid var(--glass-border);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      transition: background 0.3s, border 0.3s;
+    }
+
+    .glass-input {
+      background: var(--input-bg);
+      border: 1px solid var(--glass-border);
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(10px);
     }
 
     /* Custom Table Scrollbar */
@@ -97,22 +156,54 @@
     }
 
     .custom-scroll::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.05);
+      background: transparent;
     }
 
     .custom-scroll::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(128, 128, 128, 0.3);
       border-radius: 10px;
     }
 
     .custom-scroll::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.3);
+      background: rgba(128, 128, 128, 0.5);
+    }
+
+    /* Animation Utils */
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-fade-in-down {
+      animation: fadeInDown 0.4s ease-out forwards;
     }
   </style>
+
+  <!-- AI Metadata -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": "Maestro de Suertes Riopaila",
+    "description": "Base de datos agrícola con información de suertes, variedad, edad y ubicación.",
+    "isAccessibleForFree": true,
+    "keywords": ["agricultural", "sugarcane", "suertes", "harvest"],
+    "creator": {
+      "@type": "Organization",
+      "name": "Riopaila Agrícola"
+    }
+  }
+  </script>
 </head>
 
-<body
-  class="bg-slate-950 text-slate-100 h-[100dvh] w-full overflow-hidden flex flex-col selection:bg-teal-500/30 selection:text-teal-200">
+<body class="h-[100dvh] w-full overflow-hidden flex flex-col selection:bg-teal-500/30 selection:text-teal-200">
 
   <!-- Dynamic Background -->
   <div class="fixed inset-0 overflow-hidden pointer-events-none">
@@ -133,9 +224,17 @@
         <div class="flex flex-col">
           <h1 class="font-bold text-base leading-none tracking-tight text-white">Maestro de <span
               class="text-teal-400">Suertes</span></h1>
-          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v1.8.6</span>
+          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.0.0</span>
         </div>
       </div>
+
+      <!-- Theme Toggle -->
+      <button id="themeToggle" onclick="toggleTheme()" data-ai-action="toggle-theme"
+        class="p-2 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors mr-2 relative group">
+        <span class="material-symbols-outlined" id="themeIcon">light_mode</span>
+        <span
+          class="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 text-xs text-slate-200 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">Tema</span>
+      </button>
 
       <!-- Connection Status Indicator (Mini) -->
       <div id="miniStatus"
@@ -152,21 +251,7 @@
     <!-- Banners Container -->
     <div class="space-y-4 mb-4 shrink-0">
 
-      <!-- Update Banner -->
-      <div id="updateBanner"
-        class="hidden glass-panel border-l-4 border-l-amber-500 p-4 rounded-xl flex items-center justify-between animate-fade-in-down">
-        <div class="flex items-center gap-3">
-          <span class="material-symbols-outlined text-amber-400">system_update_alt</span>
-          <div class="flex flex-col">
-            <span class="text-sm font-bold text-white">Nueva versión disponible</span>
-            <span class="text-xs text-slate-300">Actualiza para ver los últimos cambios.</span>
-          </div>
-        </div>
-        <button onclick="applyUpdate()"
-          class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold rounded-lg shadow-lg shadow-amber-500/20 transition-all">
-          Actualizar
-        </button>
-      </div>
+
 
       <!-- Offline Banner -->
       <div id="offlineBanner"
@@ -191,10 +276,11 @@
           class="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-emerald-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500">
         </div>
         <div
-          class="relative glass-panel rounded-2xl flex items-center px-4 py-3 transition-colors focus-within:border-teal-500/50 focus-within:bg-slate-900/80">
+          class="relative glass-panel rounded-2xl flex items-center px-4 py-3 transition-colors focus-within:border-teal-500/50">
           <span class="material-symbols-outlined text-slate-400 mr-3">search</span>
           <input id="searchInput" type="search"
-            class="bg-transparent border-none text-white placeholder-slate-400 text-base w-full focus:ring-0 p-0"
+            class="glass-input bg-transparent border-none text-base w-full focus:ring-0 p-0 rounded-lg"
+            data-ai-input="search-suertes" style="color: var(--input-text);"
             placeholder="Buscar por suerte, zona, finca o código..." autocomplete="off">
           <div class="hidden sm:flex text-xs text-slate-500 border border-slate-700/50 rounded px-2 py-1 ml-2">ESC para
             limpiar</div>
@@ -214,7 +300,7 @@
     <div id="tableContainer"
       class="hidden glass-panel rounded-2xl overflow-hidden flex flex-col shadow-2xl shadow-black/40 flex-1 min-h-0">
       <div class="overflow-auto custom-scroll flex-1">
-        <table id="maestro" class="w-full text-left border-collapse">
+        <table id="maestro" class="w-full text-left border-collapse" data-ai-region="data-table">
           <thead
             class="bg-slate-900/50 text-xs uppercase text-slate-400 font-semibold sticky top-0 z-20 backdrop-blur-md">
             <!-- Headers injected by JS -->
@@ -297,7 +383,7 @@
     // CONFIGURACIÓN
     // =======================
     const CONFIG = {
-      version: 'v1.8.6',
+      version: 'v2.0.0',
       csvFile: 'maestro.csv',
       pageSize: 25
     };
@@ -317,13 +403,17 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./service-worker.js')
         .then(reg => {
-          if (reg.waiting) showUpdateBanner(reg.waiting);
+          // Check if there's already a waiting worker
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
 
           reg.addEventListener('updatefound', () => {
             const newWorker = reg.installing;
             newWorker.addEventListener('statechange', () => {
+              // Once installed, force update immediately
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                showUpdateBanner(newWorker);
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
               }
             });
           });
@@ -336,17 +426,6 @@
           window.location.reload();
         }
       });
-    }
-
-    function showUpdateBanner(worker) {
-      STATE.newWorker = worker;
-      document.getElementById('updateBanner').classList.remove('hidden');
-    }
-
-    function applyUpdate() {
-      if (STATE.newWorker) {
-        STATE.newWorker.postMessage({ type: 'SKIP_WAITING' });
-      }
     }
 
     // =======================
@@ -518,22 +597,21 @@
 
       // Render Headers (Once)
       // Fix: Check rows length instead of hasChildNodes because of comments/whitespace
+      // Render Headers (Once)
       if (thead.rows.length === 0) {
-        // Clear any text nodes/comments
         thead.innerHTML = '';
-
         const tr = document.createElement('tr');
         STATE.headers.forEach((h, index) => {
           const th = document.createElement('th');
-          let classes = "px-6 py-4 whitespace-nowrap tracking-wider font-bold bg-slate-900/90 shadow-sm";
+          th.className = "px-6 py-4 whitespace-nowrap tracking-wider font-bold shadow-sm";
+          th.style.background = "var(--table-header-bg)";
+          th.style.color = "var(--table-header-text)";
 
           if (index === STATE.edadColumnIndex) {
-            classes += " text-emerald-400 border-b-2 border-emerald-500/30";
-          } else {
-            classes += " text-teal-400";
+            th.style.color = "var(--success-text)";
+            th.style.borderBottom = "2px solid var(--success-bg)";
           }
 
-          th.className = classes;
           th.textContent = h;
           tr.appendChild(th);
         });
@@ -550,22 +628,21 @@
       const fragment = document.createDocumentFragment();
       pageData.forEach(row => {
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-white/5 transition-colors duration-150 group cursor-pointer active:bg-white/10";
+        tr.className = "transition-colors duration-150 group cursor-pointer border-b border-gray-700/20 hover-row";
         tr.onclick = () => showRowDetails(row);
 
         row.forEach((cell, index) => {
           const td = document.createElement('td');
-          // Base classes
-          let classes = "px-6 py-4 whitespace-nowrap transition-colors";
+          td.className = "px-6 py-4 whitespace-nowrap transition-colors";
+          td.style.color = "var(--text-muted)";
 
           // Styling for Age Column
           if (index === STATE.edadColumnIndex) {
-            classes += " text-emerald-400 font-bold bg-emerald-900/10";
-          } else {
-            classes += " group-hover:text-white text-slate-400";
+            td.style.color = "var(--success-text)";
+            td.style.fontWeight = "bold";
+            td.style.backgroundColor = "var(--success-bg)";
           }
 
-          td.className = classes;
           td.textContent = cell;
           tr.appendChild(td);
         });
@@ -665,14 +742,21 @@
         const val = row[i] || '-';
 
         const div = document.createElement('div');
-        div.className = "sm:col-span-1 p-3 rounded-lg bg-slate-800/30 border border-white/5 hover:bg-slate-800/50 transition-colors";
+        // Use existing class but add border variable logic via style if needed, or rely on CSS overrides
+        // For simplicity, we keep the utility classes but trust our CSS 'glass-panel' or similar will handle backgrounds?
+        // Actually, let's use a specific style for these cards to adapt
+        div.className = "sm:col-span-1 p-3 rounded-lg border transition-colors";
+        div.style.backgroundColor = "var(--input-bg)";
+        div.style.borderColor = "var(--glass-border)";
 
         const dt = document.createElement('dt');
-        dt.className = "text-xs font-bold text-teal-400 uppercase tracking-wide mb-1";
+        dt.className = "text-xs font-bold uppercase tracking-wide mb-1";
+        dt.style.color = "var(--table-header-text)"; // Use Teal/Emerald variable
         dt.textContent = header;
 
         const dd = document.createElement('dd');
-        dd.className = "mt-1 text-sm text-slate-200 break-words font-medium";
+        dd.className = "mt-1 text-sm break-words font-medium";
+        dd.style.color = "var(--text-main)";
         dd.textContent = val;
 
         div.appendChild(dt);
@@ -701,8 +785,46 @@
       }
     });
 
+    // =======================
+    // THEME MANAGEMENT
+    // =======================
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      // Check saved or system preference
+      if (savedTheme === 'light') {
+        document.documentElement.classList.add('light');
+        updateThemeIcon('light');
+      } else {
+        document.documentElement.classList.remove('light');
+        updateThemeIcon('dark');
+      }
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      html.classList.toggle('light');
+
+      const isLight = html.classList.contains('light');
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
+      updateThemeIcon(isLight ? 'light' : 'dark');
+    }
+
+    function updateThemeIcon(mode) {
+      const icon = document.getElementById('themeIcon');
+      if (mode === 'light') {
+        icon.textContent = 'dark_mode'; // Icon to switch to dark
+        icon.classList.replace('text-slate-400', 'text-slate-600');
+      } else {
+        icon.textContent = 'light_mode'; // Icon to switch to light
+        icon.classList.replace('text-slate-600', 'text-slate-400');
+      }
+    }
+
     // Start
-    document.addEventListener('DOMContentLoaded', initApp);
+    document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      initApp();
+    });
 
   </script>
 </body>
