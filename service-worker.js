@@ -1,6 +1,6 @@
 // Version constant. MUST match index.html (APP_VERSION, visible "v..." text)
 // and maestro.html (CONFIG.version, #appVersion span). Bump all four on release.
-const CACHE_VERSION = 'v2.0.0'; // 2026 Edition
+const CACHE_VERSION = 'v2.1.0'; // ZQM view + bottom nav
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
@@ -10,6 +10,7 @@ const CRITICAL_URLS = [
   BASE + 'index.html',
   BASE + 'maestro.html',
   BASE + 'maestro.csv',
+  BASE + 'zqm.csv',
   BASE + 'manifest.json',
   BASE + 'service-worker.js',
   BASE + 'icon-192.png',
@@ -82,7 +83,7 @@ self.addEventListener('fetch', event => {
 
   // A. ESTRATEGIA ESPECIAL PARA CSV (Prioridad: Velocidad)
   // Muestra el dato viejo rápido mientras descarga el nuevo en segundo plano
-  if (url.pathname.endsWith('maestro.csv')) {
+  if (url.pathname.endsWith('maestro.csv') || url.pathname.endsWith('zqm.csv')) {
     event.respondWith(cacheFirstCSV(request));
     return;
   }

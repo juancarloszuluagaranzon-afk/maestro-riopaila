@@ -178,15 +178,16 @@
       background: rgba(128, 128, 128, 0.5);
     }
 
-    /* Sticky first column (SUERTE identifier) */
-    #maestro thead th:first-child {
+    /* Sticky identifier column. The column index is per-view (renderTable adds
+       .sticky-col to the correct cell). */
+    #maestro thead th.sticky-col {
       position: sticky;
       left: 0;
       z-index: 25;
       background: var(--sticky-header-bg);
     }
 
-    #maestro tbody td:first-child {
+    #maestro tbody td.sticky-col {
       position: sticky;
       left: 0;
       z-index: 5;
@@ -195,12 +196,12 @@
       font-weight: 600;
     }
 
-    #maestro tbody tr:hover td:first-child {
+    #maestro tbody tr:hover td.sticky-col {
       background: var(--sticky-body-hover-bg);
     }
 
-    #maestro thead th:first-child::after,
-    #maestro tbody td:first-child::after {
+    #maestro thead th.sticky-col::after,
+    #maestro tbody td.sticky-col::after {
       content: '';
       position: absolute;
       top: 0;
@@ -252,6 +253,190 @@
     .filter-select[data-active="true"] {
       border-color: var(--success-text);
       color: var(--success-text);
+    }
+
+    /* Multi-select filter: button trigger + checkbox popover */
+    .filter-multi {
+      position: relative;
+      display: inline-flex;
+    }
+
+    .filter-multi-trigger {
+      background-color: var(--input-bg);
+      color: var(--input-text);
+      border: 1px solid var(--glass-border);
+      border-radius: 0.5rem;
+      padding: 0.45rem 0.45rem 0.45rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      min-width: 8rem;
+      max-width: 13rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+    }
+
+    .filter-multi-trigger:hover {
+      border-color: rgba(45, 212, 191, 0.45);
+    }
+
+    .filter-multi.active .filter-multi-trigger {
+      border-color: var(--success-text);
+      color: var(--success-text);
+    }
+
+    .filter-multi-label {
+      font-weight: 600;
+    }
+
+    .filter-multi-count {
+      margin-left: auto;
+      font-size: 0.7rem;
+      opacity: 0.7;
+      font-weight: 500;
+    }
+
+    .filter-multi.active .filter-multi-count {
+      opacity: 1;
+      background: rgba(45, 212, 191, 0.18);
+      color: var(--success-text);
+      padding: 0.05rem 0.45rem;
+      border-radius: 999px;
+      min-width: 1.25rem;
+      text-align: center;
+    }
+
+    .filter-multi-chevron {
+      font-size: 1.15em !important;
+      opacity: 0.6;
+      transition: transform 0.2s;
+    }
+
+    .filter-multi[aria-expanded="true"] .filter-multi-chevron,
+    .filter-multi-trigger[aria-expanded="true"] .filter-multi-chevron {
+      transform: rotate(180deg);
+    }
+
+    .filter-multi-popover {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      z-index: 35;
+      min-width: 100%;
+      max-width: 280px;
+      max-height: 280px;
+      overflow-y: auto;
+      background: var(--modal-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 0.65rem;
+      box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.45);
+      padding: 0.5rem;
+    }
+
+    .filter-multi-popover.hidden {
+      display: none;
+    }
+
+    .popover-head {
+      display: flex;
+      gap: 0.4rem;
+      padding-bottom: 0.4rem;
+      margin-bottom: 0.3rem;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .popover-head button {
+      flex: 1;
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      border-radius: 0.35rem;
+      padding: 0.3rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .popover-head button:hover {
+      border-color: var(--success-text);
+      color: var(--success-text);
+    }
+
+    .popover-option {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.4rem 0.35rem;
+      border-radius: 0.35rem;
+      cursor: pointer;
+      font-size: 0.78rem;
+      color: var(--text-main);
+      user-select: none;
+    }
+
+    .popover-option:hover {
+      background: var(--row-hover);
+    }
+
+    .popover-option input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--glass-border);
+      border-radius: 0.25rem;
+      cursor: pointer;
+      flex-shrink: 0;
+      position: relative;
+      background: var(--input-bg);
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .popover-option input[type="checkbox"]:checked {
+      background: var(--success-text);
+      border-color: var(--success-text);
+    }
+
+    .popover-option input[type="checkbox"]:checked::after {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 1px;
+      width: 4px;
+      height: 8px;
+      border: solid #0b1220;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    /* In mobile drawer: popover becomes inline accordion */
+    @media (max-width: 767px) {
+      #filterDrawer .filter-multi {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #filterDrawer .filter-multi-trigger {
+        width: 100%;
+        max-width: none;
+        padding-top: 0.7rem;
+        padding-bottom: 0.7rem;
+        font-size: 0.85rem;
+      }
+
+      #filterDrawer .filter-multi-popover {
+        position: static;
+        max-width: none;
+        margin-top: 0.45rem;
+        box-shadow: none;
+      }
     }
 
     .tool-button {
@@ -464,6 +649,63 @@
       }
     }
 
+    /* Bottom navigation (Maestro / ZQM tabs) */
+    body {
+      padding-bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    #bottomNav {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 40;
+      display: flex;
+      justify-content: center;
+      gap: 0.25rem;
+      background: var(--header-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--glass-border);
+      padding: 0.4rem 0.5rem calc(0.4rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    #bottomNav .nav-item {
+      flex: 1;
+      max-width: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.1rem;
+      padding: 0.4rem 0.5rem;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 0.65rem;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      cursor: pointer;
+      transition: color 0.15s, background-color 0.15s;
+    }
+
+    #bottomNav .nav-item:hover {
+      color: var(--text-main);
+      background: var(--row-hover);
+    }
+
+    #bottomNav .nav-item.active {
+      color: var(--success-text);
+    }
+
+    #bottomNav .nav-item.active .material-symbols-outlined {
+      font-variation-settings: 'FILL' 1;
+    }
+
+    #bottomNav .nav-item .material-symbols-outlined {
+      font-size: 22px;
+    }
+
     /* Right-edge fade overlay hinting horizontal scroll */
     #scrollFadeRight {
       position: absolute;
@@ -536,9 +778,9 @@
           <img src="icon-192.png" alt="Logo" class="w-6 h-6 object-contain">
         </div>
         <div class="flex flex-col">
-          <h1 class="font-bold text-base leading-none tracking-tight text-white">Maestro de <span
+          <h1 class="font-bold text-base leading-none tracking-tight text-white" id="appTitleText">Maestro de <span
               class="text-teal-400">Suertes</span></h1>
-          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.0.0</span>
+          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.1.0</span>
         </div>
       </div>
 
@@ -641,6 +883,41 @@
       <select id="filterUso" class="filter-select" aria-label="Filtrar por uso">
         <option value="">Todos los usos</option>
       </select>
+
+      <div class="filter-multi" data-key="corte">
+        <button type="button" class="filter-multi-trigger"
+          aria-expanded="false" aria-controls="cortePopover" aria-label="Filtrar por número de corte"
+          onclick="toggleMultiPopover('corte')">
+          <span class="filter-multi-label">Corte</span>
+          <span class="filter-multi-count">Todos</span>
+          <span class="material-symbols-outlined filter-multi-chevron">arrow_drop_down</span>
+        </button>
+        <div id="cortePopover" class="filter-multi-popover hidden" role="group" aria-label="Opciones de número de corte">
+          <div class="popover-head">
+            <button type="button" onclick="selectAllMulti('corte')">Seleccionar todos</button>
+            <button type="button" onclick="clearMulti('corte')">Ninguno</button>
+          </div>
+          <div class="popover-list" id="corteOptions"></div>
+        </div>
+      </div>
+
+      <div class="filter-multi" data-key="edad">
+        <button type="button" class="filter-multi-trigger"
+          aria-expanded="false" aria-controls="edadPopover" aria-label="Filtrar por edad en meses"
+          onclick="toggleMultiPopover('edad')">
+          <span class="filter-multi-label">Edad</span>
+          <span class="filter-multi-count">Todas</span>
+          <span class="material-symbols-outlined filter-multi-chevron">arrow_drop_down</span>
+        </button>
+        <div id="edadPopover" class="filter-multi-popover hidden" role="group" aria-label="Opciones de edad en meses">
+          <div class="popover-head">
+            <button type="button" onclick="selectAllMulti('edad')">Seleccionar todas</button>
+            <button type="button" onclick="clearMulti('edad')">Ninguno</button>
+          </div>
+          <div class="popover-list" id="edadOptions"></div>
+        </div>
+      </div>
+
       <button id="clearFilters" type="button"
         class="hidden px-2 py-1.5 rounded-lg text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-1">
         <span class="material-symbols-outlined text-base">filter_alt_off</span>
@@ -720,6 +997,20 @@
 
   </main>
 
+  <!-- Bottom tab navigation -->
+  <nav id="bottomNav" role="navigation" aria-label="Navegación principal">
+    <button type="button" class="nav-item active" data-view="maestro"
+      aria-current="page" onclick="switchView('maestro')">
+      <span class="material-symbols-outlined">table_view</span>
+      <span>Maestro</span>
+    </button>
+    <button type="button" class="nav-item" data-view="zqm"
+      aria-current="false" onclick="switchView('zqm')">
+      <span class="material-symbols-outlined">analytics</span>
+      <span>ZQM</span>
+    </button>
+  </nav>
+
   <!-- Detail Modal -->
   <div id="detailModal" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog"
     aria-modal="true">
@@ -786,31 +1077,83 @@
     // NOTE: `version` below MUST match service-worker.js (CACHE_VERSION),
     // index.html (APP_VERSION) and the <span id="appVersion"> text in the header.
     const CONFIG = {
-      version: 'v2.0.0',
+      version: 'v2.1.0',
       csvFile: 'maestro.csv',
       pageSize: 25
     };
 
-    let STATE = {
-      headers: [],
-      rows: [],
-      filteredRows: [],
-      currentPage: 1,
-      newWorker: null,
-      edadColumnIndex: -1,
-      sortColumn: -1,
-      sortDirection: 'asc', // 'asc' | 'desc'
-      modalRowIndex: -1    // index into filteredRows; -1 when closed
+    // =======================
+    // VIEWS (Maestro / ZQM)
+    // =======================
+    // Two independent views living in the same UI. STATE is an alias to the
+    // active view's state object. switchView(key) swaps the alias and rebuilds
+    // the UI from the target view's stored state.
+    function makeViewState() {
+      return {
+        headers: [],
+        rows: [],
+        filteredRows: [],
+        currentPage: 1,
+        sortColumn: -1,
+        sortDirection: 'asc',
+        corteColumnIndex: -1,
+        edadColumnIndex: -1,
+        modalRowIndex: -1,
+        multiFilters: { corte: new Set(), edad: new Set() },
+        singleFilters: {},   // keyed by selectId
+        searchValue: '',
+        loaded: false
+      };
+    }
+
+    const VIEWS = {
+      maestro: Object.assign(makeViewState(), {
+        key: 'maestro',
+        csvFile: 'maestro.csv',
+        appTitleHtml: 'Maestro de <span class="text-teal-400">Suertes</span>',
+        captionBase: 'Maestro de Suertes',
+        searchPlaceholder: 'Buscar por suerte, zona, finca o código...',
+        exportPrefix: 'maestro-suertes',
+        stickyCol: 0,          // SUERTE is column 0
+        processor: 'maestro',  // custom edad-hoy calculation
+        filterConfig: [
+          { key: 'zona',     selectId: 'filterZona',     label: 'Todas las zonas',     match: h => normalizeHeader(h) === 'ZONA',             index: -1 },
+          { key: 'finca',    selectId: 'filterFinca',    label: 'Todas las fincas',    match: h => normalizeHeader(h) === 'FINCA',            index: -1 },
+          { key: 'variedad', selectId: 'filterVariedad', label: 'Todas las variedades', match: h => normalizeHeader(h) === 'VARIEDAD',        index: -1 },
+          { key: 'uso',      selectId: 'filterUso',      label: 'Todos los usos',      match: h => normalizeHeader(h) === 'USO DE LA SUERTE', index: -1 }
+        ],
+        multiConfig: {
+          corte: { label: 'Corte', allLabel: 'Todos', match: h => normalizeHeader(h) === 'NUMERO DE CORTE' },
+          // Maestro uses the calculated "EDAD HOY MESES" column (set by processor).
+          edad:  { label: 'Edad',  allLabel: 'Todas', useCalculated: true }
+        }
+      }),
+      zqm: Object.assign(makeViewState(), {
+        key: 'zqm',
+        csvFile: 'zqm.csv',
+        appTitleHtml: 'ZQM<span class="text-teal-400">101</span>',
+        captionBase: 'ZQM101 - Histórico de Cortes',
+        searchPlaceholder: 'Buscar por suerte, sector, año...',
+        exportPrefix: 'zqm-cortes',
+        stickyCol: 1,          // "Ubic Técnica" is col 1 (col 0 is AÑO)
+        processor: 'generic',
+        filterConfig: [
+          // Tolerant to AÑO / AÑO / ANO variations across encodings.
+          { key: 'ano',    selectId: 'filterZona',     label: 'Todos los años',     match: h => { const n = normalizeHeader(h); return n === 'AÑO' || n === 'ANO' || n === 'AÃO'; }, index: -1 },
+          { key: 'sector', selectId: 'filterFinca',    label: 'Todos los sectores', match: h => normalizeHeader(h) === 'SECTOR', index: -1 },
+          { key: 'mes',    selectId: 'filterVariedad', label: 'Todos los meses',    match: h => normalizeHeader(h) === 'MES',    index: -1 },
+          // "Ubic Técnica" — tolerate "Técnica" / "Tecnica" / encoding variants.
+          { key: 'ubic',   selectId: 'filterUso',      label: 'Todas las ubic.',    match: h => normalizeHeader(h).startsWith('UBIC'), index: -1 }
+        ],
+        multiConfig: {
+          corte: { label: 'Corte', allLabel: 'Todos', match: h => normalizeHeader(h) === 'CORTE' },
+          edad:  { label: 'Edad',  allLabel: 'Todas', match: h => normalizeHeader(h) === 'EDAD' }
+        }
+      })
     };
 
-    // Column filters: populated from unique values after CSV loads.
-    // `index` is filled by populateFilters(); -1 means column not present.
-    const FILTER_COLUMNS = [
-      { key: 'zona',     selectId: 'filterZona',     match: h => h === 'ZONA',                     index: -1 },
-      { key: 'finca',    selectId: 'filterFinca',    match: h => h === 'FINCA',                    index: -1 },
-      { key: 'variedad', selectId: 'filterVariedad', match: h => h === 'VARIEDAD',                 index: -1 },
-      { key: 'uso',      selectId: 'filterUso',      match: h => h === 'USO DE LA SUERTE',         index: -1 },
-    ];
+    let CURRENT_VIEW_KEY = 'maestro';
+    let STATE = VIEWS[CURRENT_VIEW_KEY];
 
     // Google Sheets / Excel error sentinels that sometimes leak into CSV exports
     const ERROR_VALUES = new Set([
@@ -828,9 +1171,26 @@
       return { text: String(val), isEmpty: false };
     }
 
+    // Normalize a header string for tolerant matching across encodings and whitespace.
+    // Returns uppercase, single-spaced, trimmed form. Does NOT strip non-ASCII so
+    // that match functions can still check for "AÑO" etc. when the file is correctly
+    // encoded UTF-8.
+    function normalizeHeader(h) {
+      return (h || '').toString().toUpperCase().replace(/\s+/g, ' ').trim();
+    }
+
     // RFC 4180-ish CSV parser: respects double-quoted fields, escaped "" inside quotes,
-    // and embedded newlines in quoted cells. Skips fully-empty lines.
+    // and embedded newlines in quoted cells. Skips fully-empty lines. Strips a leading
+    // UTF-8 BOM if present.
     function parseCsvText(text, sep) {
+      // Strip UTF-8 BOM in its various shapes
+      if (text.charCodeAt(0) === 0xFEFF) {
+        text = text.slice(1);
+      } else if (text.startsWith('ï»¿')) {
+        // Mis-decoded BOM (UTF-8 bytes read as Latin-1)
+        text = text.slice(3);
+      }
+
       const rows = [];
       let cur = '';
       let row = [];
@@ -926,11 +1286,14 @@
       window.addEventListener('online', checkConnection);
       window.addEventListener('offline', checkConnection);
 
+      applyViewStaticUi();  // title, placeholder, nav state, initial labels
+
       try {
-        const response = await fetch(CONFIG.csvFile);
+        const response = await fetch(STATE.csvFile);
         if (!response.ok) throw new Error(`Error ${response.status}`);
         const text = await response.text();
         processData(text);
+        STATE.loaded = true;
       } catch (error) {
         console.error('Fallo carga:', error);
         tryFallbackCache();
@@ -939,10 +1302,11 @@
 
     async function tryFallbackCache() {
       try {
-        const cache = await caches.match(CONFIG.csvFile);
+        const cache = await caches.match(STATE.csvFile);
         if (cache) {
           const text = await cache.text();
           processData(text);
+          STATE.loaded = true;
           // Force logic to show offline banner even if navigator says online (cache mismatch)
           document.getElementById('offlineBanner').classList.remove('hidden');
         } else {
@@ -954,7 +1318,7 @@
     }
 
     function processData(csvText) {
-      if (!csvText.trim()) return showError('Datos Vacíos', 'El archivo maestro.csv está vacío.');
+      if (!csvText.trim()) return showError('Datos Vacíos', `El archivo ${STATE.csvFile} está vacío.`);
 
       // Detect separator from the first physical line. Headers rarely contain quotes,
       // so this heuristic is safe in practice.
@@ -967,95 +1331,26 @@
 
       STATE.headers = allRows[0].map(h => h.trim());
 
-      // Identificar índices de columnas necesarias (nombres exactos de tu CSV)
-      const variedadIdx = STATE.headers.findIndex(h =>
-        h.toUpperCase().trim() === 'VARIEDAD'
-      );
-      const fechaSiembraIdx = STATE.headers.findIndex(h =>
-        h.toUpperCase().replace(/\s+/g, ' ').trim() === 'FECHA DE SIEMBRA' ||
-        h.toUpperCase().includes('FECHA') && h.toUpperCase().includes('SIEMBRA')
-      );
-      const fechaUltimoCorteIdx = STATE.headers.findIndex(h =>
-        h.toUpperCase().replace(/\s+/g, ' ').trim() === 'FECHA DE ULTIMO CORTE' ||
-        h.toUpperCase().replace(/\s+/g, ' ').trim() === 'FECHA DE ÚLTIMO CORTE' ||
-        (h.toUpperCase().includes('FECHA') && h.toUpperCase().includes('ULTIMO') && h.toUpperCase().includes('CORTE'))
-      );
-
-      // Buscar la columna "EDAD" o "EDAD HOY M" para reemplazarla
-      const edadHoyIdx = STATE.headers.findIndex(h => {
-        const header = h.toUpperCase().trim();
-        return header === 'EDAD' ||
-          header === 'EDAD MESES' ||
-          (header.includes('EDAD') && !header.includes('VARIEDAD') && !header.includes('PROMEDIO'));
-      });
-
-      if (edadHoyIdx !== -1) {
-        STATE.edadColumnIndex = edadHoyIdx;
-        console.log(`✅ Columna "EDAD HOY M" encontrada en índice ${edadHoyIdx} - será reemplazada con cálculo`);
+      // View-specific row processing
+      if (STATE.processor === 'maestro') {
+        processRowsMaestro(allRows);
       } else {
-        // Fallback: Si no existe, la agregamos (como antes)
-        STATE.headers.push("EDAD HOY MESES");
-        STATE.edadColumnIndex = STATE.headers.length - 1;
+        processRowsGeneric(allRows);
       }
 
-      // Procesamos filas (optimizando memoria)
-      STATE.rows = [];
-      const now = new Date();
-
-      for (let i = 1; i < allRows.length; i++) {
-        const cells = allRows[i];
-        // Solo agregamos si la fila tiene datos coherentes
-        if (cells.length > 1) {
-          const row = cells.map(c => c.trim());
-
-          let edadMeses = '0.0';
-
-          // --- Calculation Logic ---
-          try {
-            // ... Logic same as before, simplified for this block ...
-            const variedad = variedadIdx > -1 ? row[variedadIdx].toUpperCase() : '';
-            const fechaSiembraStr = fechaSiembraIdx > -1 ? row[fechaSiembraIdx] : '';
-            const fechaCorteStr = fechaUltimoCorteIdx > -1 ? row[fechaUltimoCorteIdx] : '';
-
-            if (variedad === 'RENOVACION' || variedad === 'RENOVACIÓN') {
-              edadMeses = '0.0';
-            } else {
-              const fechaSiembra = parseDate(fechaSiembraStr);
-              const fechaCorte = parseDate(fechaCorteStr);
-
-              let fechaRef = fechaSiembra;
-              if (fechaCorte && fechaSiembra && fechaCorte > fechaSiembra) {
-                fechaRef = fechaCorte;
-              }
-
-              if (fechaRef) {
-                const diffTime = Math.abs(now - fechaRef);
-                const daysDiff = diffTime / (1000 * 60 * 60 * 24);
-                edadMeses = (daysDiff / (365.25 / 12)).toFixed(1);
-              }
-            }
-          } catch (e) { console.warn(e); }
-
-          // Reemplazar o Agregar
-          if (edadHoyIdx !== -1) {
-            row[edadHoyIdx] = edadMeses;
-          } else {
-            row.push(edadMeses);
-          }
-
-          STATE.rows.push(row);
-        }
-      }
-
-      // Init View
+      // Init View (shared)
       document.getElementById('loadingMsg').style.display = 'none';
       document.getElementById('loadingMsg').classList.add('hidden');
       document.getElementById('tableContainer').classList.remove('hidden');
 
+      // Force header rebuild (in case we switched views — headers differ)
+      const thead = document.querySelector('#maestro thead');
+      if (thead) thead.innerHTML = '';
+
       // Accessible table caption with total count
       const caption = document.getElementById('tableCaption');
       if (caption) {
-        caption.textContent = `Maestro de Suertes — ${STATE.rows.length} registros`;
+        caption.textContent = `${STATE.captionBase} — ${STATE.rows.length} registros`;
       }
 
       setupScrollFade();
@@ -1071,6 +1366,76 @@
       } catch (_) { /* ignore */ }
 
       applyFiltersAndSort();
+    }
+
+    // Maestro-specific: compute "EDAD HOY MESES" per row from planting/cut dates.
+    function processRowsMaestro(allRows) {
+      const variedadIdx = STATE.headers.findIndex(h => h.toUpperCase().trim() === 'VARIEDAD');
+      const fechaSiembraIdx = STATE.headers.findIndex(h =>
+        h.toUpperCase().replace(/\s+/g, ' ').trim() === 'FECHA DE SIEMBRA' ||
+        (h.toUpperCase().includes('FECHA') && h.toUpperCase().includes('SIEMBRA'))
+      );
+      const fechaUltimoCorteIdx = STATE.headers.findIndex(h =>
+        h.toUpperCase().replace(/\s+/g, ' ').trim() === 'FECHA DE ULTIMO CORTE' ||
+        h.toUpperCase().replace(/\s+/g, ' ').trim() === 'FECHA DE ÚLTIMO CORTE' ||
+        (h.toUpperCase().includes('FECHA') && h.toUpperCase().includes('ULTIMO') && h.toUpperCase().includes('CORTE'))
+      );
+
+      const edadHoyIdx = STATE.headers.findIndex(h => {
+        const header = h.toUpperCase().trim();
+        return header === 'EDAD' ||
+          header === 'EDAD MESES' ||
+          (header.includes('EDAD') && !header.includes('VARIEDAD') && !header.includes('PROMEDIO'));
+      });
+
+      if (edadHoyIdx !== -1) {
+        STATE.edadColumnIndex = edadHoyIdx;
+      } else {
+        STATE.headers.push('EDAD HOY MESES');
+        STATE.edadColumnIndex = STATE.headers.length - 1;
+      }
+
+      STATE.rows = [];
+      const now = new Date();
+      for (let i = 1; i < allRows.length; i++) {
+        const cells = allRows[i];
+        if (cells.length <= 1) continue;
+        const row = cells.map(c => c.trim());
+        let edadMeses = '0.0';
+        try {
+          const variedad = variedadIdx > -1 ? row[variedadIdx].toUpperCase() : '';
+          const fechaSiembraStr = fechaSiembraIdx > -1 ? row[fechaSiembraIdx] : '';
+          const fechaCorteStr = fechaUltimoCorteIdx > -1 ? row[fechaUltimoCorteIdx] : '';
+          if (variedad === 'RENOVACION' || variedad === 'RENOVACIÓN') {
+            edadMeses = '0.0';
+          } else {
+            const fechaSiembra = parseDate(fechaSiembraStr);
+            const fechaCorte = parseDate(fechaCorteStr);
+            let fechaRef = fechaSiembra;
+            if (fechaCorte && fechaSiembra && fechaCorte > fechaSiembra) fechaRef = fechaCorte;
+            if (fechaRef) {
+              const diffTime = Math.abs(now - fechaRef);
+              const daysDiff = diffTime / (1000 * 60 * 60 * 24);
+              edadMeses = (daysDiff / (365.25 / 12)).toFixed(1);
+            }
+          }
+        } catch (e) { console.warn(e); }
+        if (edadHoyIdx !== -1) row[edadHoyIdx] = edadMeses;
+        else row.push(edadMeses);
+        STATE.rows.push(row);
+      }
+    }
+
+    // Generic: just trim cells and skip empty rows. No derived columns.
+    function processRowsGeneric(allRows) {
+      STATE.rows = [];
+      for (let i = 1; i < allRows.length; i++) {
+        const cells = allRows[i];
+        if (cells.length <= 1) continue;
+        STATE.rows.push(cells.map(c => c.trim()));
+      }
+      // edadColumnIndex is set later by populateMultiFilters using view config
+      STATE.edadColumnIndex = -1;
     }
 
     // Helper: Parse DD/MM/YYYY or YYYY-MM-DD
@@ -1098,9 +1463,7 @@
       const tbody = document.querySelector('#maestro tbody');
       const thead = document.querySelector('#maestro thead');
 
-      // Render Headers (Once)
-      // Fix: Check rows length instead of hasChildNodes because of comments/whitespace
-      // Render Headers (Once)
+      // Render Headers: rebuild when empty (first time or after view switch).
       if (thead.rows.length === 0) {
         thead.innerHTML = '';
         const tr = document.createElement('tr');
@@ -1111,8 +1474,10 @@
           th.setAttribute('aria-sort', 'none');
           th.style.color = "var(--table-header-text)";
 
-          // First column (sticky) gets its background from CSS rules.
-          if (index !== 0) {
+          // Sticky identifier column: styled by CSS via .sticky-col.
+          if (index === STATE.stickyCol) {
+            th.classList.add('sticky-col');
+          } else {
             th.style.background = "var(--table-header-bg)";
           }
 
@@ -1133,6 +1498,9 @@
           tr.appendChild(th);
         });
         thead.appendChild(tr);
+        // Sync sort indicators with stored sort state (e.g., when re-rendering
+        // headers after a view switch that had a sort applied).
+        updateSortIndicators();
       }
 
       // Pagination
@@ -1153,8 +1521,10 @@
           const td = document.createElement('td');
           td.className = "px-6 py-4 whitespace-nowrap transition-colors";
 
-          // First column (sticky) is styled by CSS; avoid inline color that would win over it.
-          if (index !== 0) {
+          // Sticky identifier column: CSS handles color/background.
+          if (index === STATE.stickyCol) {
+            td.classList.add('sticky-col');
+          } else {
             td.style.color = "var(--text-muted)";
           }
 
@@ -1249,11 +1619,113 @@
       }
     });
 
+    // =======================
+    // VIEW SWITCHING
+    // =======================
+    // Applies labels and placeholders that differ between views.
+    function applyViewStaticUi() {
+      const titleEl = document.getElementById('appTitleText');
+      if (titleEl) titleEl.innerHTML = STATE.appTitleHtml;
+
+      const input = document.getElementById('searchInput');
+      if (input) input.placeholder = STATE.searchPlaceholder;
+
+      // Bottom nav active state
+      document.querySelectorAll('#bottomNav .nav-item').forEach(btn => {
+        const active = btn.dataset.view === CURRENT_VIEW_KEY;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-current', active ? 'page' : 'false');
+      });
+
+      // Initial "all" option labels (in case selects haven't been populated yet)
+      STATE.filterConfig.forEach(col => {
+        const s = document.getElementById(col.selectId);
+        if (s && s.options[0]) s.options[0].textContent = col.label;
+      });
+    }
+
+    // Persists current UI inputs into the active view's state before switching out.
+    function saveViewUiSnapshot() {
+      STATE.singleFilters = {};
+      STATE.filterConfig.forEach(col => {
+        const s = document.getElementById(col.selectId);
+        STATE.singleFilters[col.selectId] = s ? s.value : '';
+      });
+      const input = document.getElementById('searchInput');
+      STATE.searchValue = input ? input.value : '';
+    }
+
+    // Restores UI inputs from the (now-active) view's state.
+    // Options must already be populated before calling this.
+    function restoreViewUiSnapshot() {
+      STATE.filterConfig.forEach(col => {
+        const s = document.getElementById(col.selectId);
+        if (!s) return;
+        const saved = (STATE.singleFilters && STATE.singleFilters[col.selectId]) || '';
+        // Only restore if the value still exists among the repopulated options
+        const exists = Array.from(s.options).some(o => o.value === saved);
+        s.value = exists ? saved : '';
+      });
+      const input = document.getElementById('searchInput');
+      if (input) input.value = STATE.searchValue || '';
+    }
+
+    async function switchView(targetKey) {
+      if (targetKey === CURRENT_VIEW_KEY) return;
+      if (!VIEWS[targetKey]) return;
+
+      // Close transient UI (modal, drawer, popovers)
+      closeAllMultiPopovers();
+      if (isFilterDrawerOpen()) closeFilterDrawer();
+      const modal = document.getElementById('detailModal');
+      if (modal && !modal.classList.contains('hidden')) closeModal();
+
+      // Save current view's UI state, then swap the alias.
+      saveViewUiSnapshot();
+      CURRENT_VIEW_KEY = targetKey;
+      STATE = VIEWS[targetKey];
+
+      applyViewStaticUi();
+
+      // Force header rebuild on next renderTable
+      const thead = document.querySelector('#maestro thead');
+      if (thead) thead.innerHTML = '';
+
+      if (!STATE.loaded) {
+        // First time opening this view — fetch CSV lazily.
+        document.getElementById('tableContainer').classList.add('hidden');
+        const loadingEl = document.getElementById('loadingMsg');
+        loadingEl.classList.remove('hidden');
+        loadingEl.style.display = '';
+        try {
+          const response = await fetch(STATE.csvFile);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const text = await response.text();
+          // Abort if the user switched away while we were loading.
+          if (CURRENT_VIEW_KEY !== targetKey) return;
+          processData(text);  // processData calls populateFilters + applyFiltersAndSort
+          STATE.loaded = true;
+        } catch (err) {
+          console.error('[switchView] fallo carga', err);
+          if (CURRENT_VIEW_KEY === targetKey) tryFallbackCache();
+        }
+      } else {
+        // Already loaded: repopulate filter options from this view's data,
+        // restore saved select/search values, and re-render.
+        populateFilters();
+        restoreViewUiSnapshot();
+        applyFiltersAndSort();
+      }
+    }
+
     function updateFilterBadge() {
-      const count = FILTER_COLUMNS.filter(c => {
+      let count = STATE.filterConfig.filter(c => {
         const s = document.getElementById(c.selectId);
         return s && s.value;
       }).length;
+      Object.keys(STATE.multiFilters).forEach(k => {
+        if (STATE.multiFilters[k].size > 0) count++;
+      });
       const badge = document.getElementById('filterTriggerBadge');
       if (!badge) return;
       if (count > 0) {
@@ -1285,16 +1757,21 @@
     // FILTROS / ORDEN / EXPORT
     // =======================
     function populateFilters() {
-      FILTER_COLUMNS.forEach(col => {
-        const idx = STATE.headers.findIndex(h => col.match(h.toUpperCase().trim()));
+      STATE.filterConfig.forEach(col => {
+        // match receives raw header; match fn normalizes internally.
+        const idx = STATE.headers.findIndex(h => col.match(h));
         col.index = idx;
         const select = document.getElementById(col.selectId);
         if (!select) return;
+
+        // Refresh the "all" option label from the active view's config.
+        if (select.options[0]) select.options[0].textContent = col.label;
 
         if (idx === -1) {
           select.style.display = 'none';
           return;
         }
+        select.style.display = '';
 
         const values = [...new Set(
           STATE.rows
@@ -1302,7 +1779,7 @@
             .filter(v => v !== '' && !ERROR_VALUES.has(v.toUpperCase()))
         )].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
 
-        // Keep the "all" option (first one) intact; clear any stale dynamic options.
+        // Clear any stale dynamic options but keep the "all" option (index 0).
         while (select.options.length > 1) select.remove(1);
 
         for (const v of values) {
@@ -1312,7 +1789,152 @@
           select.appendChild(opt);
         }
       });
+
+      populateMultiFilters();
     }
+
+    function populateMultiFilters() {
+      // Corte: integer values; column name per view config.
+      const cfgC = STATE.multiConfig.corte;
+      const corteIdx = cfgC && cfgC.match ? STATE.headers.findIndex(cfgC.match) : -1;
+      STATE.corteColumnIndex = corteIdx;
+      const corteContainer = document.querySelector('.filter-multi[data-key="corte"]');
+      if (corteIdx === -1) {
+        if (corteContainer) corteContainer.style.display = 'none';
+      } else {
+        if (corteContainer) corteContainer.style.display = '';
+        const values = [...new Set(
+          STATE.rows.map(r => {
+            const v = String(r[corteIdx] || '').trim();
+            const n = parseInt(v, 10);
+            return isNaN(n) ? null : n;
+          }).filter(n => n !== null)
+        )].sort((a, b) => a - b);
+        renderMultiOptions('corte', values.map(v => ({ value: v, label: `Corte ${v}` })));
+      }
+
+      // Edad: bucket by floor(value). For maestro, uses the calculated column
+      // set by the processor. For ZQM, we look up the raw "EDAD" column here.
+      const cfgE = STATE.multiConfig.edad;
+      let edadIdx;
+      if (cfgE && cfgE.useCalculated) {
+        edadIdx = STATE.edadColumnIndex;
+      } else if (cfgE && cfgE.match) {
+        edadIdx = STATE.headers.findIndex(cfgE.match);
+        STATE.edadColumnIndex = edadIdx;
+      } else {
+        edadIdx = -1;
+      }
+      const edadContainer = document.querySelector('.filter-multi[data-key="edad"]');
+      if (edadIdx === -1) {
+        if (edadContainer) edadContainer.style.display = 'none';
+      } else {
+        if (edadContainer) edadContainer.style.display = '';
+        const buckets = [...new Set(
+          STATE.rows.map(r => {
+            const v = parseFloat(String(r[edadIdx] || '').replace(',', '.'));
+            return isNaN(v) ? null : Math.floor(v);
+          }).filter(n => n !== null)
+        )].sort((a, b) => a - b);
+        renderMultiOptions('edad', buckets.map(v => ({
+          value: v,
+          label: `${v}–${v + 1} meses`
+        })));
+      }
+    }
+
+    function renderMultiOptions(key, options) {
+      const container = document.getElementById(`${key}Options`);
+      if (!container) return;
+      container.innerHTML = '';
+      options.forEach(opt => {
+        const label = document.createElement('label');
+        label.className = 'popover-option';
+
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.value = String(opt.value);
+        input.dataset.multi = key;
+        // Preserve selection when repopulating (e.g., after view switch)
+        input.checked = STATE.multiFilters[key].has(opt.value);
+        input.addEventListener('change', (e) => {
+          const v = parseInt(e.target.value, 10);
+          if (e.target.checked) STATE.multiFilters[key].add(v);
+          else STATE.multiFilters[key].delete(v);
+          updateMultiLabel(key);
+          applyFiltersAndSort();
+        });
+
+        const span = document.createElement('span');
+        span.textContent = opt.label;
+
+        label.appendChild(input);
+        label.appendChild(span);
+        container.appendChild(label);
+      });
+      updateMultiLabel(key);
+    }
+
+    function updateMultiLabel(key) {
+      const container = document.querySelector(`.filter-multi[data-key="${key}"]`);
+      if (!container) return;
+      const countEl = container.querySelector('.filter-multi-count');
+      const size = STATE.multiFilters[key].size;
+      const cfg = STATE.multiConfig && STATE.multiConfig[key];
+      const allLabel = (cfg && cfg.allLabel) || 'Todos';
+      if (size === 0) {
+        container.classList.remove('active');
+        countEl.textContent = allLabel;
+      } else {
+        container.classList.add('active');
+        countEl.textContent = String(size);
+      }
+      // Also update the button label from config (e.g., "Edad" / "Corte")
+      const labelEl = container.querySelector('.filter-multi-label');
+      if (labelEl && cfg && cfg.label) labelEl.textContent = cfg.label;
+    }
+
+    function toggleMultiPopover(key) {
+      const popover = document.getElementById(`${key}Popover`);
+      const trigger = document.querySelector(`.filter-multi[data-key="${key}"] .filter-multi-trigger`);
+      const isOpen = !popover.classList.contains('hidden');
+
+      closeAllMultiPopovers();
+
+      if (!isOpen) {
+        popover.classList.remove('hidden');
+        trigger.setAttribute('aria-expanded', 'true');
+      }
+    }
+
+    function closeAllMultiPopovers() {
+      document.querySelectorAll('.filter-multi-popover').forEach(p => p.classList.add('hidden'));
+      document.querySelectorAll('.filter-multi-trigger').forEach(t => t.setAttribute('aria-expanded', 'false'));
+    }
+
+    function selectAllMulti(key) {
+      const options = document.querySelectorAll(`#${key}Options input[type="checkbox"]`);
+      STATE.multiFilters[key].clear();
+      options.forEach(cb => {
+        cb.checked = true;
+        STATE.multiFilters[key].add(parseInt(cb.value, 10));
+      });
+      updateMultiLabel(key);
+      applyFiltersAndSort();
+    }
+
+    function clearMulti(key) {
+      const options = document.querySelectorAll(`#${key}Options input[type="checkbox"]`);
+      STATE.multiFilters[key].clear();
+      options.forEach(cb => { cb.checked = false; });
+      updateMultiLabel(key);
+      applyFiltersAndSort();
+    }
+
+    // Close any open multi-filter popover when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.filter-multi')) closeAllMultiPopovers();
+    });
 
     function applyFiltersAndSort() {
       const term = (document.getElementById('searchInput').value || '').toLowerCase();
@@ -1320,7 +1942,7 @@
       let rows = STATE.rows;
 
       // Column filters
-      FILTER_COLUMNS.forEach(col => {
+      STATE.filterConfig.forEach(col => {
         if (col.index === -1) return;
         const select = document.getElementById(col.selectId);
         const value = select ? select.value : '';
@@ -1328,6 +1950,25 @@
         if (!value) return;
         rows = rows.filter(r => (r[col.index] || '').trim() === value);
       });
+
+      // Multi-filter: Número de corte (integer values)
+      if (STATE.corteColumnIndex !== -1 && STATE.multiFilters.corte.size > 0) {
+        const idx = STATE.corteColumnIndex;
+        rows = rows.filter(r => {
+          const n = parseInt(String(r[idx] || '').trim(), 10);
+          return !isNaN(n) && STATE.multiFilters.corte.has(n);
+        });
+      }
+
+      // Multi-filter: Edad (floor(value) buckets)
+      if (STATE.edadColumnIndex !== -1 && STATE.multiFilters.edad.size > 0) {
+        const idx = STATE.edadColumnIndex;
+        rows = rows.filter(r => {
+          const v = parseFloat(String(r[idx] || '').replace(',', '.'));
+          if (isNaN(v)) return false;
+          return STATE.multiFilters.edad.has(Math.floor(v));
+        });
+      }
 
       // Text search (applies over already column-filtered rows for cheaper scan)
       if (term) {
@@ -1364,10 +2005,12 @@
       STATE.currentPage = 1;
 
       // Toggle clear-filters button
-      const anyActive = !!term || FILTER_COLUMNS.some(c => {
-        const s = document.getElementById(c.selectId);
-        return s && s.value;
-      });
+      const anyActive = !!term
+        || STATE.filterConfig.some(c => {
+          const s = document.getElementById(c.selectId);
+          return s && s.value;
+        })
+        || Object.keys(STATE.multiFilters).some(k => STATE.multiFilters[k].size > 0);
       document.getElementById('clearFilters').classList.toggle('hidden', !anyActive);
 
       // Update results count
@@ -1385,9 +2028,14 @@
 
     function clearAllFilters() {
       document.getElementById('searchInput').value = '';
-      FILTER_COLUMNS.forEach(col => {
+      STATE.filterConfig.forEach(col => {
         const s = document.getElementById(col.selectId);
         if (s) s.value = '';
+      });
+      Object.keys(STATE.multiFilters).forEach(key => {
+        STATE.multiFilters[key].clear();
+        document.querySelectorAll(`#${key}Options input[type="checkbox"]`).forEach(cb => cb.checked = false);
+        updateMultiLabel(key);
       });
       applyFiltersAndSort();
     }
@@ -1449,7 +2097,7 @@
       const a = document.createElement('a');
       const today = new Date().toISOString().slice(0, 10);
       a.href = url;
-      a.download = `maestro-suertes-${today}.csv`;
+      a.download = `${STATE.exportPrefix || 'datos'}-${today}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1465,7 +2113,7 @@
       searchTimeout = setTimeout(applyFiltersAndSort, 250);
     });
 
-    FILTER_COLUMNS.forEach(col => {
+    STATE.filterConfig.forEach(col => {
       const s = document.getElementById(col.selectId);
       if (s) s.addEventListener('change', applyFiltersAndSort);
     });
