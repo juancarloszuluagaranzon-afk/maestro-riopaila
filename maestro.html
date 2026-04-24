@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0f172a">
   <meta name="description" content="Maestro de Suertes - Riopaila Agrícola">
   <link rel="manifest" href="manifest.json">
@@ -46,6 +46,11 @@
       --success-text: #34d399;
       /* emerald-400 */
 
+      /* Sticky first column (dark) - must be opaque to block scrolling content behind */
+      --sticky-header-bg: #0f172a;
+      --sticky-body-bg: #0b1220;
+      --sticky-body-hover-bg: #162032;
+
       --aurora-opacity: 0.6;
       --aurora-blend: screen;
     }
@@ -76,6 +81,11 @@
 
       --success-bg: rgba(16, 185, 129, 0.15);
       --success-text: #059669;
+
+      /* Sticky first column (light) */
+      --sticky-header-bg: #f8fafc;
+      --sticky-body-bg: #ffffff;
+      --sticky-body-hover-bg: #eef2f7;
 
       --aurora-opacity: 0.5;
       --aurora-blend: normal;
@@ -166,6 +176,310 @@
 
     .custom-scroll::-webkit-scrollbar-thumb:hover {
       background: rgba(128, 128, 128, 0.5);
+    }
+
+    /* Sticky first column (SUERTE identifier) */
+    #maestro thead th:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 25;
+      background: var(--sticky-header-bg);
+    }
+
+    #maestro tbody td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 5;
+      background: var(--sticky-body-bg);
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    #maestro tbody tr:hover td:first-child {
+      background: var(--sticky-body-hover-bg);
+    }
+
+    #maestro thead th:first-child::after,
+    #maestro tbody td:first-child::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: -8px;
+      bottom: 0;
+      width: 8px;
+      pointer-events: none;
+      background: linear-gradient(to right, rgba(0, 0, 0, 0.18), transparent);
+    }
+
+    /* Empty / error values (#N/D, #N/A, #REF!, blanks, etc.) */
+    .cell-empty {
+      color: var(--text-muted) !important;
+      opacity: 0.55;
+      font-style: italic;
+    }
+
+    /* Toolbar: filter selects and tool buttons */
+    .filter-select {
+      background-color: var(--input-bg);
+      color: var(--input-text);
+      border: 1px solid var(--glass-border);
+      border-radius: 0.5rem;
+      padding: 0.45rem 1.9rem 0.45rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2394a3b8'%3E%3Cpath d='M5 8l5 5 5-5H5z'/%3E%3C/svg%3E");
+      background-position: right 0.4rem center;
+      background-repeat: no-repeat;
+      background-size: 1em;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      min-width: 8rem;
+      max-width: 13rem;
+    }
+
+    .filter-select:hover {
+      border-color: rgba(45, 212, 191, 0.45);
+    }
+
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--success-text);
+      box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.18);
+    }
+
+    .filter-select[data-active="true"] {
+      border-color: var(--success-text);
+      color: var(--success-text);
+    }
+
+    .tool-button {
+      background-color: var(--input-bg);
+      color: var(--text-main);
+      border: 1px solid var(--glass-border);
+      border-radius: 0.5rem;
+      padding: 0.45rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      white-space: nowrap;
+    }
+
+    .tool-button:hover {
+      border-color: rgba(45, 212, 191, 0.45);
+      color: var(--success-text);
+    }
+
+    .tool-button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Sortable column headers */
+    #maestro thead th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    #maestro thead th.sortable:hover .sort-indicator {
+      opacity: 0.8;
+    }
+
+    .sort-indicator {
+      font-size: 1em;
+      vertical-align: -4px;
+      margin-left: 0.15rem;
+      opacity: 0.25;
+      transition: opacity 0.15s, color 0.15s;
+    }
+
+    .sort-indicator.active {
+      opacity: 1;
+      color: var(--success-text);
+    }
+
+    /* =========================================================
+       Mobile filter drawer (< 768px).
+       Same DOM element reused: on desktop it's an inline toolbar,
+       on mobile it slides in from the right.
+       ========================================================= */
+    /* Elements hidden by default on desktop */
+    #filterTrigger,
+    #filterBackdrop,
+    .drawer-header {
+      display: none;
+    }
+
+    @media (max-width: 767px) {
+      #filterDrawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: min(86vw, 340px);
+        padding: 4rem 1rem 1rem;
+        margin-bottom: 0;
+        background: var(--modal-bg);
+        backdrop-filter: blur(28px);
+        -webkit-backdrop-filter: blur(28px);
+        border-left: 1px solid var(--glass-border);
+        box-shadow: -24px 0 48px -12px rgba(0, 0, 0, 0.5);
+        transform: translateX(100%);
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 50;
+        overflow-y: auto;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: stretch;
+      }
+
+      #filterDrawer.open {
+        transform: translateX(0);
+      }
+
+      /* Drawer items go full-width vertical on mobile */
+      #filterDrawer > * {
+        width: 100%;
+      }
+
+      #filterDrawer .filter-select,
+      #filterDrawer .tool-button {
+        width: 100%;
+        max-width: none;
+        padding-top: 0.7rem;
+        padding-bottom: 0.7rem;
+        font-size: 0.85rem;
+        justify-content: center;
+      }
+
+      #filterDrawer .drawer-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+        margin-left: 0 !important;
+      }
+
+      #filterDrawer #clearFilters {
+        justify-content: center;
+      }
+
+      #filterDrawer .drawer-header {
+        display: flex;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        padding: 0.9rem 1rem;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--glass-border);
+        background: inherit;
+      }
+
+      #filterBackdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.6);
+        backdrop-filter: blur(2px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.28s ease-out;
+        z-index: 45;
+      }
+
+      #filterBackdrop.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      #filterTrigger {
+        display: flex;
+        position: fixed;
+        top: 50%;
+        right: 0;
+        transform: translateY(-50%);
+        z-index: 40;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.9rem 0.7rem;
+        border-radius: 1rem 0 0 1rem;
+        background: var(--glass-bg);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid var(--glass-border);
+        border-right: none;
+        color: var(--text-main);
+        box-shadow: -6px 4px 18px rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+      }
+
+      #filterTrigger:active {
+        transform: translateY(-50%) scale(0.97);
+      }
+
+      #filterTrigger .material-symbols-outlined {
+        font-size: 22px;
+      }
+
+      #filterTriggerBadge {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 9px;
+        background: var(--success-text);
+        color: #0b1220;
+        font-size: 10px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        border: 2px solid var(--modal-bg);
+      }
+
+      #filterTriggerBadge.hidden {
+        display: none;
+      }
+
+      /* Don't let the drawer force body width */
+      body.drawer-open {
+        overflow: hidden;
+      }
+    }
+
+    /* Respect reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      #filterDrawer,
+      #filterBackdrop {
+        transition: none;
+      }
+    }
+
+    /* Right-edge fade overlay hinting horizontal scroll */
+    #scrollFadeRight {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 40px;
+      pointer-events: none;
+      background: linear-gradient(to left, var(--bg-body) 10%, transparent 100%);
+      opacity: 0;
+      transition: opacity 0.25s ease-out;
+      z-index: 30;
+    }
+
+    #scrollFadeRight.visible {
+      opacity: 0.9;
     }
 
     /* Animation Utils */
@@ -270,7 +584,7 @@
     </div>
 
     <!-- Search & Controls -->
-    <div class="mb-4 shrink-0">
+    <div class="mb-3 shrink-0">
       <div class="relative group">
         <div
           class="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-emerald-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500">
@@ -288,6 +602,74 @@
       </div>
     </div>
 
+    <!-- Results chip (always visible, both mobile and desktop) -->
+    <div class="mb-3 shrink-0 flex items-center gap-2">
+      <span id="resultsChip" aria-live="polite"
+        class="text-xs font-mono text-slate-400 bg-slate-800/40 px-3 py-1.5 rounded-full border border-slate-700/30">
+        <span id="resultCount">0</span> resultados
+      </span>
+      <span class="md:hidden text-[11px] text-slate-500 ml-auto flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm">chevron_right</span>
+        Toca el panel lateral para filtrar
+      </span>
+    </div>
+
+    <!-- Filters & Toolbar (inline on desktop, drawer on mobile) -->
+    <aside id="filterDrawer" role="group" aria-labelledby="filtersTitle"
+      class="mb-4 shrink-0 flex flex-wrap items-center gap-2">
+      <div class="drawer-header">
+        <h2 id="filtersTitle" class="text-sm font-bold text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-teal-400 text-lg">tune</span>
+          Filtros y herramientas
+        </h2>
+        <button type="button" aria-label="Cerrar filtros"
+          class="rounded-full p-1 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+          onclick="closeFilterDrawer()">
+          <span class="material-symbols-outlined text-xl">close</span>
+        </button>
+      </div>
+
+      <select id="filterZona" class="filter-select" aria-label="Filtrar por zona">
+        <option value="">Todas las zonas</option>
+      </select>
+      <select id="filterFinca" class="filter-select" aria-label="Filtrar por finca">
+        <option value="">Todas las fincas</option>
+      </select>
+      <select id="filterVariedad" class="filter-select" aria-label="Filtrar por variedad">
+        <option value="">Todas las variedades</option>
+      </select>
+      <select id="filterUso" class="filter-select" aria-label="Filtrar por uso">
+        <option value="">Todos los usos</option>
+      </select>
+      <button id="clearFilters" type="button"
+        class="hidden px-2 py-1.5 rounded-lg text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-1">
+        <span class="material-symbols-outlined text-base">filter_alt_off</span>
+        Limpiar
+      </button>
+
+      <div class="drawer-controls flex items-center gap-2 ml-auto">
+        <select id="pageSizeSelect" class="filter-select" aria-label="Registros por página" style="min-width: 6rem">
+          <option value="25">25 / pág</option>
+          <option value="50">50 / pág</option>
+          <option value="100">100 / pág</option>
+          <option value="200">200 / pág</option>
+        </select>
+        <button id="exportBtn" type="button" class="tool-button"
+          title="Descargar CSV con los datos visibles (filtros y orden aplicados)">
+          <span class="material-symbols-outlined text-base">download</span>
+          Exportar
+        </button>
+      </div>
+    </aside>
+
+    <!-- Mobile filter drawer: trigger tab and backdrop -->
+    <button id="filterTrigger" type="button" aria-expanded="false" aria-controls="filterDrawer"
+      aria-label="Abrir filtros y herramientas" onclick="toggleFilterDrawer()">
+      <span class="material-symbols-outlined">tune</span>
+      <span id="filterTriggerBadge" class="hidden">0</span>
+    </button>
+    <div id="filterBackdrop" aria-hidden="true" onclick="closeFilterDrawer()"></div>
+
     <!-- Content Area -->
 
     <!-- Loading State -->
@@ -299,16 +681,21 @@
     <!-- Data Table (Scrollable) -->
     <div id="tableContainer"
       class="hidden glass-panel rounded-2xl overflow-hidden flex flex-col shadow-2xl shadow-black/40 flex-1 min-h-0">
-      <div class="overflow-auto custom-scroll flex-1">
-        <table id="maestro" class="w-full text-left border-collapse" data-ai-region="data-table">
-          <thead
-            class="bg-slate-900/50 text-xs uppercase text-slate-400 font-semibold sticky top-0 z-20 backdrop-blur-md">
-            <!-- Headers injected by JS -->
-          </thead>
-          <tbody class="divide-y divide-slate-800/50 text-sm text-slate-300">
-            <!-- Rows injected by JS -->
-          </tbody>
-        </table>
+      <div class="relative flex-1 min-h-0">
+        <div id="tableScroll" class="overflow-auto custom-scroll h-full">
+          <table id="maestro" class="w-full text-left border-collapse" data-ai-region="data-table">
+            <caption class="sr-only" id="tableCaption">Maestro de Suertes</caption>
+            <thead
+              class="bg-slate-900/50 text-xs uppercase text-slate-400 font-semibold sticky top-0 z-20 backdrop-blur-md">
+              <!-- Headers injected by JS -->
+            </thead>
+            <tbody class="divide-y divide-slate-800/50 text-sm text-slate-300">
+              <!-- Rows injected by JS -->
+            </tbody>
+          </table>
+        </div>
+        <!-- Right-edge fade to hint horizontal scroll -->
+        <div id="scrollFadeRight" aria-hidden="true"></div>
       </div>
 
       <!-- Footer / Pagination -->
@@ -348,15 +735,29 @@
 
           <!-- Header -->
           <div
-            class="glass-header px-4 py-3 sm:px-6 flex justify-between items-center sticky top-0 z-10 bg-slate-900/80 backdrop-blur-md">
-            <h3 class="text-lg font-bold leading-6 text-white flex items-center gap-2">
-              <span class="material-symbols-outlined text-teal-400">info</span>
-              Detalle de la Suerte
+            class="glass-header px-4 py-3 sm:px-6 flex justify-between items-center sticky top-0 z-10 bg-slate-900/80 backdrop-blur-md gap-2">
+            <h3 id="modal-title" class="text-lg font-bold leading-6 text-white flex items-center gap-2 min-w-0">
+              <span class="material-symbols-outlined text-teal-400 shrink-0">info</span>
+              <span class="truncate">Detalle de la Suerte</span>
             </h3>
-            <button onclick="closeModal()"
-              class="rounded-full p-1 text-slate-400 hover:text-white hover:bg-white/10 transition-all">
-              <span class="material-symbols-outlined text-xl">close</span>
-            </button>
+            <div class="flex items-center gap-1 shrink-0">
+              <button id="modalPrev" type="button" aria-label="Registro anterior"
+                class="rounded-full p-1 text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                onclick="navigateModal(-1)">
+                <span class="material-symbols-outlined text-xl">chevron_left</span>
+              </button>
+              <span id="modalIndex" class="text-xs font-mono text-slate-400 px-2" aria-live="polite"></span>
+              <button id="modalNext" type="button" aria-label="Registro siguiente"
+                class="rounded-full p-1 text-slate-400 hover:text-white hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                onclick="navigateModal(+1)">
+                <span class="material-symbols-outlined text-xl">chevron_right</span>
+              </button>
+              <button type="button" aria-label="Cerrar"
+                class="rounded-full p-1 text-slate-400 hover:text-white hover:bg-white/10 transition-all ml-1"
+                onclick="closeModal()">
+                <span class="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
           </div>
 
           <!-- Content -->
@@ -382,6 +783,8 @@
     // =======================
     // CONFIGURACIÓN
     // =======================
+    // NOTE: `version` below MUST match service-worker.js (CACHE_VERSION),
+    // index.html (APP_VERSION) and the <span id="appVersion"> text in the header.
     const CONFIG = {
       version: 'v2.0.0',
       csvFile: 'maestro.csv',
@@ -394,8 +797,95 @@
       filteredRows: [],
       currentPage: 1,
       newWorker: null,
-      edadColumnIndex: -1
+      edadColumnIndex: -1,
+      sortColumn: -1,
+      sortDirection: 'asc', // 'asc' | 'desc'
+      modalRowIndex: -1    // index into filteredRows; -1 when closed
     };
+
+    // Column filters: populated from unique values after CSV loads.
+    // `index` is filled by populateFilters(); -1 means column not present.
+    const FILTER_COLUMNS = [
+      { key: 'zona',     selectId: 'filterZona',     match: h => h === 'ZONA',                     index: -1 },
+      { key: 'finca',    selectId: 'filterFinca',    match: h => h === 'FINCA',                    index: -1 },
+      { key: 'variedad', selectId: 'filterVariedad', match: h => h === 'VARIEDAD',                 index: -1 },
+      { key: 'uso',      selectId: 'filterUso',      match: h => h === 'USO DE LA SUERTE',         index: -1 },
+    ];
+
+    // Google Sheets / Excel error sentinels that sometimes leak into CSV exports
+    const ERROR_VALUES = new Set([
+      '#N/D', '#N/A', '#REF!', '#VALUE!', '#DIV/0!', '#NAME?',
+      '#NULL!', '#NUM!', '#ERROR!', 'NULL', 'UNDEFINED'
+    ]);
+
+    function sanitizeCell(val) {
+      if (val === null || val === undefined) return { text: '—', isEmpty: true };
+      const s = String(val).trim();
+      if (s === '') return { text: '—', isEmpty: true };
+      if (ERROR_VALUES.has(s.toUpperCase())) {
+        return { text: '—', isEmpty: true, original: s };
+      }
+      return { text: String(val), isEmpty: false };
+    }
+
+    // RFC 4180-ish CSV parser: respects double-quoted fields, escaped "" inside quotes,
+    // and embedded newlines in quoted cells. Skips fully-empty lines.
+    function parseCsvText(text, sep) {
+      const rows = [];
+      let cur = '';
+      let row = [];
+      let inQuotes = false;
+      const len = text.length;
+      let i = 0;
+
+      while (i < len) {
+        const ch = text[i];
+        if (inQuotes) {
+          if (ch === '"') {
+            if (text[i + 1] === '"') { cur += '"'; i += 2; continue; }
+            inQuotes = false;
+            i++;
+          } else {
+            cur += ch;
+            i++;
+          }
+        } else {
+          if (ch === '"' && cur === '') { inQuotes = true; i++; }
+          else if (ch === sep) { row.push(cur); cur = ''; i++; }
+          else if (ch === '\r') { i++; }
+          else if (ch === '\n') {
+            row.push(cur); cur = '';
+            if (!(row.length === 1 && row[0] === '')) rows.push(row);
+            row = [];
+            i++;
+          } else {
+            cur += ch;
+            i++;
+          }
+        }
+      }
+      // Flush last cell / row when file has no trailing newline
+      if (cur !== '' || row.length > 0) {
+        row.push(cur);
+        if (!(row.length === 1 && row[0] === '')) rows.push(row);
+      }
+      return rows;
+    }
+
+    // Try to read a value as a number, tolerating "4,43" (comma decimals) and thousands dots.
+    function parseLocaleNumber(val) {
+      if (val === null || val === undefined) return NaN;
+      const s = String(val).trim();
+      if (s === '' || ERROR_VALUES.has(s.toUpperCase())) return NaN;
+      // Remove spaces; treat comma as decimal if no dot present, otherwise as thousand sep.
+      const hasDot = s.includes('.');
+      const hasComma = s.includes(',');
+      let cleaned = s.replace(/\s/g, '');
+      if (hasComma && !hasDot) cleaned = cleaned.replace(',', '.');
+      else if (hasComma && hasDot) cleaned = cleaned.replace(/,/g, '');
+      const n = Number(cleaned);
+      return isNaN(n) ? NaN : n;
+    }
 
     // =======================
     // SERVICE WORKER
@@ -436,15 +926,6 @@
       window.addEventListener('online', checkConnection);
       window.addEventListener('offline', checkConnection);
 
-      // Keyboard shortcut for search
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          document.getElementById('searchInput').value = '';
-          document.getElementById('searchInput').dispatchEvent(new Event('input'));
-          document.getElementById('searchInput').blur();
-        }
-      });
-
       try {
         const response = await fetch(CONFIG.csvFile);
         if (!response.ok) throw new Error(`Error ${response.status}`);
@@ -475,11 +956,16 @@
     function processData(csvText) {
       if (!csvText.trim()) return showError('Datos Vacíos', 'El archivo maestro.csv está vacío.');
 
-      const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
-      if (lines.length < 2) return showError('Formato Inválido', 'El archivo no tiene cabeceras o datos.');
+      // Detect separator from the first physical line. Headers rarely contain quotes,
+      // so this heuristic is safe in practice.
+      const firstLineEnd = csvText.search(/\r?\n/);
+      const firstLine = firstLineEnd === -1 ? csvText : csvText.slice(0, firstLineEnd);
+      const separator = firstLine.includes(';') ? ';' : ',';
 
-      const separator = lines[0].includes(';') ? ';' : ',';
-      STATE.headers = lines[0].split(separator).map(h => h.trim());
+      const allRows = parseCsvText(csvText, separator);
+      if (allRows.length < 2) return showError('Formato Inválido', 'El archivo no tiene cabeceras o datos.');
+
+      STATE.headers = allRows[0].map(h => h.trim());
 
       // Identificar índices de columnas necesarias (nombres exactos de tu CSV)
       const variedadIdx = STATE.headers.findIndex(h =>
@@ -516,8 +1002,8 @@
       STATE.rows = [];
       const now = new Date();
 
-      for (let i = 1; i < lines.length; i++) {
-        const cells = lines[i].split(separator);
+      for (let i = 1; i < allRows.length; i++) {
+        const cells = allRows[i];
         // Solo agregamos si la fila tiene datos coherentes
         if (cells.length > 1) {
           const row = cells.map(c => c.trim());
@@ -562,12 +1048,29 @@
       }
 
       // Init View
-      STATE.filteredRows = [...STATE.rows];
       document.getElementById('loadingMsg').style.display = 'none';
       document.getElementById('loadingMsg').classList.add('hidden');
       document.getElementById('tableContainer').classList.remove('hidden');
 
-      renderTable();
+      // Accessible table caption with total count
+      const caption = document.getElementById('tableCaption');
+      if (caption) {
+        caption.textContent = `Maestro de Suertes — ${STATE.rows.length} registros`;
+      }
+
+      setupScrollFade();
+      populateFilters();
+
+      // Restore persisted page-size preference (if any)
+      try {
+        const saved = parseInt(localStorage.getItem('pageSize') || '', 10);
+        if (saved > 0) {
+          CONFIG.pageSize = saved;
+          document.getElementById('pageSizeSelect').value = String(saved);
+        }
+      } catch (_) { /* ignore */ }
+
+      applyFiltersAndSort();
     }
 
     // Helper: Parse DD/MM/YYYY or YYYY-MM-DD
@@ -603,16 +1106,30 @@
         const tr = document.createElement('tr');
         STATE.headers.forEach((h, index) => {
           const th = document.createElement('th');
-          th.className = "px-6 py-4 whitespace-nowrap tracking-wider font-bold shadow-sm";
-          th.style.background = "var(--table-header-bg)";
+          th.className = "px-6 py-4 whitespace-nowrap tracking-wider font-bold shadow-sm sortable";
+          th.setAttribute('scope', 'col');
+          th.setAttribute('aria-sort', 'none');
           th.style.color = "var(--table-header-text)";
+
+          // First column (sticky) gets its background from CSS rules.
+          if (index !== 0) {
+            th.style.background = "var(--table-header-bg)";
+          }
 
           if (index === STATE.edadColumnIndex) {
             th.style.color = "var(--success-text)";
             th.style.borderBottom = "2px solid var(--success-bg)";
           }
 
-          th.textContent = h;
+          const label = document.createElement('span');
+          label.textContent = h;
+          const indicator = document.createElement('span');
+          indicator.className = 'sort-indicator material-symbols-outlined';
+          indicator.textContent = 'unfold_more';
+
+          th.appendChild(label);
+          th.appendChild(indicator);
+          th.addEventListener('click', () => toggleSort(index));
           tr.appendChild(th);
         });
         thead.appendChild(tr);
@@ -626,15 +1143,20 @@
       const pageData = STATE.filteredRows.slice(start, start + CONFIG.pageSize);
 
       const fragment = document.createDocumentFragment();
-      pageData.forEach(row => {
+      pageData.forEach((row, i) => {
+        const filteredIdx = start + i;
         const tr = document.createElement('tr');
         tr.className = "transition-colors duration-150 group cursor-pointer border-b border-gray-700/20 hover-row";
-        tr.onclick = () => showRowDetails(row);
+        tr.onclick = () => showRowDetails(filteredIdx);
 
         row.forEach((cell, index) => {
           const td = document.createElement('td');
           td.className = "px-6 py-4 whitespace-nowrap transition-colors";
-          td.style.color = "var(--text-muted)";
+
+          // First column (sticky) is styled by CSS; avoid inline color that would win over it.
+          if (index !== 0) {
+            td.style.color = "var(--text-muted)";
+          }
 
           // Styling for Age Column
           if (index === STATE.edadColumnIndex) {
@@ -643,7 +1165,15 @@
             td.style.backgroundColor = "var(--success-bg)";
           }
 
-          td.textContent = cell;
+          const sanitized = sanitizeCell(cell);
+          td.textContent = sanitized.text;
+          if (sanitized.isEmpty) {
+            td.classList.add('cell-empty');
+            if (sanitized.original) {
+              td.title = `Valor original: ${sanitized.original}`;
+            }
+          }
+
           tr.appendChild(td);
         });
         fragment.appendChild(tr);
@@ -654,26 +1184,307 @@
 
       // UI Updates
       document.getElementById('pageInfo').textContent =
-        `PÁG ${STATE.currentPage} / ${totalPages} (${STATE.filteredRows.length})`;
+        `PÁG ${STATE.currentPage} / ${totalPages}`;
 
       document.getElementById('prevPage').disabled = STATE.currentPage === 1;
       document.getElementById('nextPage').disabled = STATE.currentPage >= totalPages;
+
+      // Re-evaluate horizontal-scroll hint after content swap
+      requestAnimationFrame(updateScrollFade);
+    }
+
+    // =======================
+    // MOBILE FILTER DRAWER
+    // =======================
+    const MOBILE_MQ = window.matchMedia('(max-width: 767px)');
+
+    function isDrawerMode() {
+      return MOBILE_MQ.matches;
+    }
+
+    function openFilterDrawer() {
+      if (!isDrawerMode()) return;
+      const drawer = document.getElementById('filterDrawer');
+      const backdrop = document.getElementById('filterBackdrop');
+      const trigger = document.getElementById('filterTrigger');
+      drawer.classList.add('open');
+      backdrop.classList.add('open');
+      trigger.setAttribute('aria-expanded', 'true');
+      document.body.classList.add('drawer-open');
+      // Focus first select for keyboard users
+      const first = drawer.querySelector('select, button:not([aria-label="Cerrar filtros"])');
+      if (first) first.focus();
+    }
+
+    function closeFilterDrawer() {
+      const drawer = document.getElementById('filterDrawer');
+      const backdrop = document.getElementById('filterBackdrop');
+      const trigger = document.getElementById('filterTrigger');
+      const wasOpen = drawer.classList.contains('open');
+      drawer.classList.remove('open');
+      backdrop.classList.remove('open');
+      trigger.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('drawer-open');
+      if (wasOpen && isDrawerMode()) trigger.focus();
+    }
+
+    function toggleFilterDrawer() {
+      const drawer = document.getElementById('filterDrawer');
+      if (drawer.classList.contains('open')) closeFilterDrawer();
+      else openFilterDrawer();
+    }
+
+    function isFilterDrawerOpen() {
+      return document.getElementById('filterDrawer').classList.contains('open');
+    }
+
+    // When crossing from mobile to desktop, force-reset drawer state so nothing
+    // stays in a half-broken "open" layout.
+    MOBILE_MQ.addEventListener('change', (e) => {
+      if (!e.matches) {
+        document.getElementById('filterDrawer').classList.remove('open');
+        document.getElementById('filterBackdrop').classList.remove('open');
+        document.getElementById('filterTrigger').setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('drawer-open');
+      }
+    });
+
+    function updateFilterBadge() {
+      const count = FILTER_COLUMNS.filter(c => {
+        const s = document.getElementById(c.selectId);
+        return s && s.value;
+      }).length;
+      const badge = document.getElementById('filterTriggerBadge');
+      if (!badge) return;
+      if (count > 0) {
+        badge.textContent = String(count);
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    // Shows/hides the right-edge gradient to hint horizontal scroll is available.
+    function updateScrollFade() {
+      const scroller = document.getElementById('tableScroll');
+      const fade = document.getElementById('scrollFadeRight');
+      if (!scroller || !fade) return;
+      const remaining = scroller.scrollWidth - scroller.clientWidth - scroller.scrollLeft;
+      fade.classList.toggle('visible', remaining > 8);
+    }
+
+    function setupScrollFade() {
+      const scroller = document.getElementById('tableScroll');
+      if (!scroller) return;
+      scroller.addEventListener('scroll', updateScrollFade, { passive: true });
+      window.addEventListener('resize', updateScrollFade);
+      requestAnimationFrame(updateScrollFade);
+    }
+
+    // =======================
+    // FILTROS / ORDEN / EXPORT
+    // =======================
+    function populateFilters() {
+      FILTER_COLUMNS.forEach(col => {
+        const idx = STATE.headers.findIndex(h => col.match(h.toUpperCase().trim()));
+        col.index = idx;
+        const select = document.getElementById(col.selectId);
+        if (!select) return;
+
+        if (idx === -1) {
+          select.style.display = 'none';
+          return;
+        }
+
+        const values = [...new Set(
+          STATE.rows
+            .map(r => (r[idx] || '').trim())
+            .filter(v => v !== '' && !ERROR_VALUES.has(v.toUpperCase()))
+        )].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
+
+        // Keep the "all" option (first one) intact; clear any stale dynamic options.
+        while (select.options.length > 1) select.remove(1);
+
+        for (const v of values) {
+          const opt = document.createElement('option');
+          opt.value = v;
+          opt.textContent = v;
+          select.appendChild(opt);
+        }
+      });
+    }
+
+    function applyFiltersAndSort() {
+      const term = (document.getElementById('searchInput').value || '').toLowerCase();
+
+      let rows = STATE.rows;
+
+      // Column filters
+      FILTER_COLUMNS.forEach(col => {
+        if (col.index === -1) return;
+        const select = document.getElementById(col.selectId);
+        const value = select ? select.value : '';
+        select.dataset.active = value ? 'true' : 'false';
+        if (!value) return;
+        rows = rows.filter(r => (r[col.index] || '').trim() === value);
+      });
+
+      // Text search (applies over already column-filtered rows for cheaper scan)
+      if (term) {
+        rows = rows.filter(row => row.some(cell => (cell || '').toLowerCase().includes(term)));
+      }
+
+      // Sort
+      if (STATE.sortColumn !== -1) {
+        const col = STATE.sortColumn;
+        const dir = STATE.sortDirection === 'asc' ? 1 : -1;
+        rows = [...rows].sort((a, b) => {
+          const av = a[col];
+          const bv = b[col];
+          const aEmpty = av === undefined || av === null || String(av).trim() === '';
+          const bEmpty = bv === undefined || bv === null || String(bv).trim() === '';
+          // Push empty/error to the end regardless of direction
+          if (aEmpty && bEmpty) return 0;
+          if (aEmpty) return 1;
+          if (bEmpty) return -1;
+
+          const an = parseLocaleNumber(av);
+          const bn = parseLocaleNumber(bv);
+          if (!isNaN(an) && !isNaN(bn)) return (an - bn) * dir;
+
+          const ad = parseDate(av);
+          const bd = parseDate(bv);
+          if (ad && bd) return (ad - bd) * dir;
+
+          return String(av).localeCompare(String(bv), 'es', { numeric: true }) * dir;
+        });
+      }
+
+      STATE.filteredRows = rows;
+      STATE.currentPage = 1;
+
+      // Toggle clear-filters button
+      const anyActive = !!term || FILTER_COLUMNS.some(c => {
+        const s = document.getElementById(c.selectId);
+        return s && s.value;
+      });
+      document.getElementById('clearFilters').classList.toggle('hidden', !anyActive);
+
+      // Update results count
+      const countEl = document.getElementById('resultCount');
+      if (countEl) {
+        countEl.textContent = anyActive
+          ? `${STATE.filteredRows.length} de ${STATE.rows.length}`
+          : `${STATE.rows.length}`;
+      }
+
+      updateFilterBadge();
+
+      renderTable();
+    }
+
+    function clearAllFilters() {
+      document.getElementById('searchInput').value = '';
+      FILTER_COLUMNS.forEach(col => {
+        const s = document.getElementById(col.selectId);
+        if (s) s.value = '';
+      });
+      applyFiltersAndSort();
+    }
+
+    function toggleSort(columnIndex) {
+      if (STATE.sortColumn === columnIndex) {
+        if (STATE.sortDirection === 'asc') {
+          STATE.sortDirection = 'desc';
+        } else {
+          // Third click: reset to natural order
+          STATE.sortColumn = -1;
+          STATE.sortDirection = 'asc';
+        }
+      } else {
+        STATE.sortColumn = columnIndex;
+        STATE.sortDirection = 'asc';
+      }
+      updateSortIndicators();
+      applyFiltersAndSort();
+    }
+
+    function updateSortIndicators() {
+      document.querySelectorAll('#maestro thead th').forEach((th, i) => {
+        const ind = th.querySelector('.sort-indicator');
+        if (!ind) return;
+        if (STATE.sortColumn === i) {
+          ind.textContent = STATE.sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward';
+          ind.classList.add('active');
+          th.setAttribute('aria-sort', STATE.sortDirection === 'asc' ? 'ascending' : 'descending');
+        } else {
+          ind.textContent = 'unfold_more';
+          ind.classList.remove('active');
+          th.setAttribute('aria-sort', 'none');
+        }
+      });
+    }
+
+    function exportCSV() {
+      if (!STATE.filteredRows.length) {
+        alert('No hay datos para exportar.');
+        return;
+      }
+      const sep = ';';
+      const needsQuote = /[";\r\n]/;
+      const escape = v => {
+        const s = v === null || v === undefined ? '' : String(v);
+        return needsQuote.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const lines = [
+        STATE.headers.map(escape).join(sep),
+        ...STATE.filteredRows.map(r =>
+          STATE.headers.map((_, i) => escape(r[i])).join(sep)
+        )
+      ];
+      // UTF-8 BOM so Excel detects encoding correctly
+      const csv = '﻿' + lines.join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const today = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `maestro-suertes-${today}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
     // =======================
     // EVENTOS
     // =======================
     let searchTimeout;
-    document.getElementById('searchInput').addEventListener('input', (e) => {
+    document.getElementById('searchInput').addEventListener('input', () => {
       clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
-        const term = e.target.value.toLowerCase();
-        STATE.filteredRows = STATE.rows.filter(row =>
-          row.some(cell => cell.toLowerCase().includes(term))
-        );
+      searchTimeout = setTimeout(applyFiltersAndSort, 250);
+    });
+
+    FILTER_COLUMNS.forEach(col => {
+      const s = document.getElementById(col.selectId);
+      if (s) s.addEventListener('change', applyFiltersAndSort);
+    });
+
+    document.getElementById('clearFilters').addEventListener('click', clearAllFilters);
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      exportCSV();
+      // Close the drawer in mobile so the user sees the download feedback
+      if (isDrawerMode() && isFilterDrawerOpen()) closeFilterDrawer();
+    });
+
+    document.getElementById('pageSizeSelect').addEventListener('change', (e) => {
+      const n = parseInt(e.target.value, 10);
+      if (n > 0) {
+        CONFIG.pageSize = n;
+        try { localStorage.setItem('pageSize', String(n)); } catch (_) { /* ignore */ }
         STATE.currentPage = 1;
         renderTable();
-      }, 300);
+      }
     });
 
     document.getElementById('prevPage').addEventListener('click', () => {
@@ -733,55 +1544,101 @@
     // =======================
     // MODAL
     // =======================
-    function showRowDetails(row) {
-      const modal = document.getElementById('detailModal');
+    function renderModalContent(row) {
       const content = document.getElementById('modalContent');
       content.innerHTML = '';
 
       STATE.headers.forEach((header, i) => {
-        const val = row[i] || '-';
+        const sanitized = sanitizeCell(row[i]);
 
         const div = document.createElement('div');
-        // Use existing class but add border variable logic via style if needed, or rely on CSS overrides
-        // For simplicity, we keep the utility classes but trust our CSS 'glass-panel' or similar will handle backgrounds?
-        // Actually, let's use a specific style for these cards to adapt
         div.className = "sm:col-span-1 p-3 rounded-lg border transition-colors";
         div.style.backgroundColor = "var(--input-bg)";
         div.style.borderColor = "var(--glass-border)";
 
         const dt = document.createElement('dt');
         dt.className = "text-xs font-bold uppercase tracking-wide mb-1";
-        dt.style.color = "var(--table-header-text)"; // Use Teal/Emerald variable
+        dt.style.color = "var(--table-header-text)";
         dt.textContent = header;
 
         const dd = document.createElement('dd');
         dd.className = "mt-1 text-sm break-words font-medium";
         dd.style.color = "var(--text-main)";
-        dd.textContent = val;
+        dd.textContent = sanitized.text;
+        if (sanitized.isEmpty) {
+          dd.classList.add('cell-empty');
+          if (sanitized.original) {
+            dd.title = `Valor original: ${sanitized.original}`;
+          }
+        }
 
         div.appendChild(dt);
         div.appendChild(dd);
         content.appendChild(div);
       });
+    }
 
-      modal.classList.remove('hidden');
-      // Prevent body scroll
+    function updateModalNavUI() {
+      const idx = STATE.modalRowIndex;
+      const total = STATE.filteredRows.length;
+      document.getElementById('modalPrev').disabled = idx <= 0;
+      document.getElementById('modalNext').disabled = idx >= total - 1;
+      document.getElementById('modalIndex').textContent = total > 0
+        ? `${idx + 1} / ${total}`
+        : '';
+    }
+
+    function showRowDetails(idx) {
+      if (idx < 0 || idx >= STATE.filteredRows.length) return;
+      STATE.modalRowIndex = idx;
+      renderModalContent(STATE.filteredRows[idx]);
+      updateModalNavUI();
+      document.getElementById('detailModal').classList.remove('hidden');
       document.body.style.overflow = 'hidden';
+    }
+
+    function navigateModal(delta) {
+      const next = STATE.modalRowIndex + delta;
+      if (next < 0 || next >= STATE.filteredRows.length) return;
+      STATE.modalRowIndex = next;
+      renderModalContent(STATE.filteredRows[next]);
+      updateModalNavUI();
+      // Reset scroll position inside the modal body on each navigation
+      const body = document.querySelector('#detailModal .overflow-y-auto');
+      if (body) body.scrollTop = 0;
     }
 
     function closeModal() {
       document.getElementById('detailModal').classList.add('hidden');
       document.body.style.overflow = '';
+      STATE.modalRowIndex = -1;
     }
 
-    // Close on Escape key
+    // Unified global keyboard handler.
+    // Priority: detail modal (open) > filter drawer (open) > search clear.
     document.addEventListener('keydown', (e) => {
+      const modal = document.getElementById('detailModal');
+      const modalOpen = modal && !modal.classList.contains('hidden');
+
+      if (modalOpen) {
+        if (e.key === 'Escape') { e.preventDefault(); closeModal(); return; }
+        if (e.key === 'ArrowLeft')  { e.preventDefault(); navigateModal(-1); return; }
+        if (e.key === 'ArrowRight') { e.preventDefault(); navigateModal(+1); return; }
+        return;
+      }
+
+      if (isFilterDrawerOpen()) {
+        if (e.key === 'Escape') { e.preventDefault(); closeFilterDrawer(); return; }
+        return;
+      }
+
       if (e.key === 'Escape') {
-        const modal = document.getElementById('detailModal');
-        if (!modal.classList.contains('hidden')) {
-          closeModal();
-          // Stop propagation so search clear doesn't trigger immediately if focused (optional refinement)
+        const input = document.getElementById('searchInput');
+        if (input.value) {
+          input.value = '';
+          applyFiltersAndSort();
         }
+        input.blur();
       }
     });
 

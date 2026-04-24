@@ -1,3 +1,5 @@
+// Version constant. MUST match index.html (APP_VERSION, visible "v..." text)
+// and maestro.html (CONFIG.version, #appVersion span). Bump all four on release.
 const CACHE_VERSION = 'v2.0.0'; // 2026 Edition
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
