@@ -706,6 +706,154 @@
       font-size: 22px;
     }
 
+    /* =========================================================
+       KPI dashboard inside the detail modal (used by ZQM view).
+       ========================================================= */
+    .kpi-modal {
+      display: block;
+    }
+
+    .kpi-header {
+      padding-bottom: 0.85rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .kpi-suerte {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: 0.5px;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+
+    .kpi-sector {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+      letter-spacing: 0.3px;
+    }
+
+    .kpi-date {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.55rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--success-text);
+      background: rgba(45, 212, 191, 0.12);
+      padding: 0.3rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(45, 212, 191, 0.25);
+    }
+
+    .kpi-date .material-symbols-outlined {
+      font-size: 14px;
+    }
+
+    .kpi-date-sep {
+      opacity: 0.5;
+      margin: 0 0.15rem;
+    }
+
+    .kpi-section {
+      margin-bottom: 1rem;
+    }
+
+    .kpi-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .kpi-section-title {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      padding-left: 0.15rem;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+      gap: 0.55rem;
+    }
+
+    .kpi-card {
+      position: relative;
+      background: var(--input-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 0.65rem;
+      padding: 0.7rem 0.8rem 0.6rem;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.15s, background-color 0.15s;
+      overflow: hidden;
+    }
+
+    .kpi-card:hover {
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .kpi-card.accent {
+      border-color: rgba(45, 212, 191, 0.35);
+      background: rgba(45, 212, 191, 0.08);
+    }
+
+    .kpi-card.empty {
+      opacity: 0.55;
+    }
+
+    .kpi-icon {
+      position: absolute;
+      top: 0.55rem;
+      right: 0.55rem;
+      font-size: 18px !important;
+      color: var(--text-muted);
+      opacity: 0.55;
+    }
+
+    .kpi-card.accent .kpi-icon {
+      color: var(--success-text);
+      opacity: 0.8;
+    }
+
+    .kpi-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.15;
+      font-variant-numeric: tabular-nums;
+      padding-right: 1.2rem;  /* leave room for the corner icon */
+    }
+
+    .kpi-card.accent .kpi-value {
+      color: var(--success-text);
+    }
+
+    .kpi-card.empty .kpi-value {
+      font-style: italic;
+      color: var(--text-muted);
+    }
+
+    .kpi-unit {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-left: 0.15rem;
+    }
+
+    .kpi-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+    }
+
     /* Right-edge fade overlay hinting horizontal scroll */
     #scrollFadeRight {
       position: absolute;
@@ -1029,7 +1177,7 @@
             class="glass-header px-4 py-3 sm:px-6 flex justify-between items-center sticky top-0 z-10 bg-slate-900/80 backdrop-blur-md gap-2">
             <h3 id="modal-title" class="text-lg font-bold leading-6 text-white flex items-center gap-2 min-w-0">
               <span class="material-symbols-outlined text-teal-400 shrink-0">info</span>
-              <span class="truncate">Detalle de la Suerte</span>
+              <span class="truncate" id="modalTitleText">Detalle de la Suerte</span>
             </h3>
             <div class="flex items-center gap-1 shrink-0">
               <button id="modalPrev" type="button" aria-label="Registro anterior"
@@ -1116,6 +1264,8 @@
         exportPrefix: 'maestro-suertes',
         stickyCol: 0,          // SUERTE is column 0
         processor: 'maestro',  // custom edad-hoy calculation
+        modalRenderer: 'kpi',
+        modalTitle: 'Detalle de la Suerte',
         filterConfig: [
           { key: 'zona',     selectId: 'filterZona',     label: 'Todas las zonas',     match: h => normalizeHeader(h) === 'ZONA',             index: -1 },
           { key: 'finca',    selectId: 'filterFinca',    label: 'Todas las fincas',    match: h => normalizeHeader(h) === 'FINCA',            index: -1 },
@@ -1137,6 +1287,8 @@
         exportPrefix: 'zqm-cortes',
         stickyCol: 1,          // "Ubic Técnica" is col 1 (col 0 is AÑO)
         processor: 'generic',
+        modalRenderer: 'kpi',
+        modalTitle: 'Detalle del Corte',
         filterConfig: [
           // Tolerant to AÑO / AÑO / ANO variations across encodings.
           { key: 'ano',    selectId: 'filterZona',     label: 'Todos los años',     match: h => { const n = normalizeHeader(h); return n === 'AÑO' || n === 'ANO' || n === 'AÃO'; }, index: -1 },
@@ -1626,6 +1778,9 @@
     function applyViewStaticUi() {
       const titleEl = document.getElementById('appTitleText');
       if (titleEl) titleEl.innerHTML = STATE.appTitleHtml;
+
+      const modalTitleEl = document.getElementById('modalTitleText');
+      if (modalTitleEl && STATE.modalTitle) modalTitleEl.textContent = STATE.modalTitle;
 
       const input = document.getElementById('searchInput');
       if (input) input.placeholder = STATE.searchPlaceholder;
@@ -2192,10 +2347,27 @@
     // =======================
     // MODAL
     // =======================
+    // Per-view KPI renderer dispatch. Falls back to the field-list layout
+    // for views that don't define a custom KPI renderer.
+    const MODAL_KPI_RENDERERS = {
+      maestro: (row, content) => renderModalKpiMaestro(row, content),
+      zqm:     (row, content) => renderModalKpiZqm(row, content)
+    };
+
     function renderModalContent(row) {
       const content = document.getElementById('modalContent');
       content.innerHTML = '';
+      // Reset to default grid; KPI renderers override the class.
+      content.className = 'grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2';
 
+      const renderer = STATE.modalRenderer === 'kpi'
+        ? (MODAL_KPI_RENDERERS[STATE.key] || renderModalDefault)
+        : renderModalDefault;
+      renderer(row, content);
+    }
+
+    // Default: every header → labeled card. Used by Maestro.
+    function renderModalDefault(row, content) {
       STATE.headers.forEach((header, i) => {
         const sanitized = sanitizeCell(row[i]);
 
@@ -2224,6 +2396,240 @@
         div.appendChild(dd);
         content.appendChild(div);
       });
+    }
+
+    // KPI dashboard: groups metrics into Identificación / Características /
+    // Productividad / Calidad / Producción de Azúcar. Used by ZQM.
+    function renderModalKpiZqm(row, content) {
+      // Use a single-column container; KPI sub-grids handle their own layout.
+      content.className = 'kpi-modal';
+
+      const headers = STATE.headers;
+      // Build a normalized-header → first-index map; helper finds Nth match.
+      const findIdx = (norm, occurrence) => {
+        let count = 0;
+        for (let i = 0; i < headers.length; i++) {
+          if (normalizeHeader(headers[i]) === norm) {
+            if (count === (occurrence || 0)) return i;
+            count++;
+          }
+        }
+        return -1;
+      };
+      const findIdxStarts = (prefix) =>
+        headers.findIndex(h => normalizeHeader(h).startsWith(prefix));
+
+      // Resolve cell value by matchers (returns sanitized text or '—')
+      const getByIdx = (idx) => idx === -1 ? '—' : sanitizeCell(row[idx]).text;
+      const getFirst = (...norms) => {
+        for (const n of norms) {
+          const i = findIdx(n);
+          if (i !== -1) return getByIdx(i);
+        }
+        return '—';
+      };
+
+      // Identification
+      const ano   = getFirst('AÑO', 'ANO', 'AÃO');
+      const mes   = getFirst('MES');
+      const ubic  = getByIdx(findIdxStarts('UBIC'));
+      const sector = getFirst('SECTOR');
+      const corte  = getFirst('CORTE');
+
+      // Characteristics
+      const area = getFirst('AREA');
+      const edad = getFirst('EDAD');
+
+      // Productivity
+      const tcMes   = getFirst('TC-MES', 'TC MES');
+      const tcTotal = getFirst('TC-TOTAL', 'TC TOTAL');
+      const tch     = getFirst('TCH');
+      const tchm    = getFirst('TCHM');
+
+      // Quality
+      const brix       = getFirst('BRIX');
+      const sacarosa   = getFirst('SACAROSA');
+      const pureza     = getFirst('PUREZA');
+      const rendimient = getFirst('RENDIMIENT', 'RENDIMIENTO');
+
+      // Sugar production: header has duplicate "TON.AZUCAR"; use occurrence-based lookup.
+      const idxTonAz1 = findIdx('TON.AZUCAR', 0);
+      const idxTonAz2 = findIdx('TON.AZUCAR', 1);
+      const idxTahm   = findIdx('TON.AZUCAR (TAHM)', 0);
+      const tonAz = getByIdx(idxTonAz1);
+      const tah   = getByIdx(idxTonAz2);
+      const tahm  = getByIdx(idxTahm);
+
+      // Build markup
+      content.innerHTML = `
+        <div class="kpi-header">
+          <div class="kpi-suerte">${escapeHtml(ubic)}</div>
+          <div class="kpi-sector">${escapeHtml(sector)}</div>
+          <div class="kpi-date">
+            <span class="material-symbols-outlined">event</span>
+            Mes ${escapeHtml(mes)} · ${escapeHtml(ano)}
+            <span class="kpi-date-sep">·</span>
+            <span class="material-symbols-outlined">content_cut</span>
+            Corte ${escapeHtml(corte)}
+          </div>
+        </div>
+        <div class="kpi-section">
+          <div class="kpi-section-title">Características</div>
+          <div class="kpi-grid">
+            ${kpiCard('square_foot', area, 'ha', 'Área')}
+            ${kpiCard('calendar_month', edad, 'meses', 'Edad al corte')}
+          </div>
+        </div>
+        <div class="kpi-section">
+          <div class="kpi-section-title">Productividad</div>
+          <div class="kpi-grid">
+            ${kpiCard('bar_chart', tch, 't/ha', 'TCH', true)}
+            ${kpiCard('speed', tchm, 't/ha·mes', 'TCHM', true)}
+            ${kpiCard('scale', tcTotal, 't', 'TC Total')}
+            ${kpiCard('event_available', tcMes, 't', 'TC del mes')}
+          </div>
+        </div>
+        <div class="kpi-section">
+          <div class="kpi-section-title">Calidad</div>
+          <div class="kpi-grid">
+            ${kpiCard('water_drop', brix, '%', 'Brix')}
+            ${kpiCard('science', sacarosa, '%', 'Sacarosa')}
+            ${kpiCard('verified', pureza, '%', 'Pureza')}
+            ${kpiCard('trending_up', rendimient, '%', 'Rendimiento')}
+          </div>
+        </div>
+        <div class="kpi-section">
+          <div class="kpi-section-title">Producción de azúcar</div>
+          <div class="kpi-grid">
+            ${kpiCard('inventory_2', tonAz, 't', 'Toneladas azúcar', true)}
+            ${kpiCard('agriculture', tah, 't/ha', 'TAH (azúcar/ha)')}
+            ${kpiCard('query_stats', tahm, 't/ha·mes', 'TAHM', true)}
+          </div>
+        </div>
+      `;
+    }
+
+    // KPI dashboard for Maestro: identifies the suerte and shows status,
+    // schedule, productivity estimates and responsibles.
+    function renderModalKpiMaestro(row, content) {
+      content.className = 'kpi-modal';
+
+      const headers = STATE.headers;
+      const findIdx = (norm) => headers.findIndex(h => normalizeHeader(h) === norm);
+      const findIdxStarts = (prefix) => headers.findIndex(h => normalizeHeader(h).startsWith(prefix));
+      const getByIdx = (idx) => idx === -1 ? '—' : sanitizeCell(row[idx]).text;
+      const getFirst = (...norms) => {
+        for (const n of norms) {
+          const i = findIdx(n);
+          if (i !== -1) return getByIdx(i);
+        }
+        return '—';
+      };
+
+      // Identification
+      const suerte   = getFirst('SUERTE');
+      const finca    = getFirst('FINCA');
+      const zona     = getFirst('ZONA');
+      const variedad = getFirst('VARIEDAD');
+
+      // Características
+      const area     = getFirst('AREA');
+      const uso      = getFirst('USO DE LA SUERTE');
+      const zonaAgro = getFirst('ZONA AGROECOLOGICA', 'ZONA AGROECOLÓGICA');
+
+      // Estado del cultivo (calculated edad highlighted)
+      const edadHoy  = STATE.edadColumnIndex !== -1
+        ? sanitizeCell(row[STATE.edadColumnIndex]).text
+        : '—';
+      const corteN   = getFirst('NUMERO DE CORTE');
+
+      // Cronograma
+      const fSiembra = getFirst('FECHA DE SIEMBRA');
+      const fUltCort = getFirst('FECHA DE ULTIMO CORTE', 'FECHA DE ÚLTIMO CORTE');
+      const fProxCor = getFirst('FECHA DEL PROXIMO CORTE', 'FECHA DEL PRÓXIMO CORTE');
+
+      // Productividad
+      const tchPpto  = getFirst('TCH PPTO');
+      const tchAnt   = getFirst('TCH ANTERIOR');
+      const tchm     = getFirst('TCHM');
+      const tonsPpto = getFirst('TONELADAS PPTO');
+      const tonsEst  = getFirst('TONELADAS ESTIMADAS');
+
+      // Responsables
+      const respZona = getFirst('RESPONSABLE ZONA');
+      const tecnico  = getFirst('TECNICO AGRICOLA RESPONSABLE', 'TÉCNICO AGRÍCOLA RESPONSABLE', 'TECNICO AGRÍCOLA RESPONSABLE');
+
+      const variedadBadge = variedad && variedad !== '—'
+        ? `<span class="kpi-badge">${escapeHtml(variedad)}</span>`
+        : '';
+
+      content.innerHTML = `
+        <div class="kpi-header">
+          <div class="kpi-suerte">${escapeHtml(suerte)}</div>
+          <div class="kpi-sector">${escapeHtml(finca)} · Zona ${escapeHtml(zona)}</div>
+          ${variedadBadge ? `<div class="kpi-date" style="margin-top:.55rem">
+            <span class="material-symbols-outlined">grass</span>
+            ${escapeHtml(variedad)}
+          </div>` : ''}
+        </div>
+        <div class="kpi-section">
+          <div class="kpi-section-title">Características</div>
+          <div class="kpi-grid">
+            ${kpiCard('square_foot', area, 'ha', 'Área')}
+            ${kpiCard('category', uso, '', 'Uso de la suerte')}
+            ${kpiCard('terrain', zonaAgro, '', 'Zona agroecológica')}
+          </div>
+        </div>
+        <div class="kpi-section">
+          <div class="kpi-section-title">Estado del cultivo</div>
+          <div class="kpi-grid">
+            ${kpiCard('schedule', edadHoy, 'meses', 'Edad hoy', true)}
+            ${kpiCard('content_cut', corteN, '', 'Número de corte')}
+          </div>
+        </div>
+        <div class="kpi-section">
+          <div class="kpi-section-title">Cronograma</div>
+          <div class="kpi-grid">
+            ${kpiCard('eco', fSiembra, '', 'Siembra')}
+            ${kpiCard('history', fUltCort, '', 'Último corte')}
+            ${kpiCard('event_upcoming', fProxCor, '', 'Próximo corte', true)}
+          </div>
+        </div>
+        <div class="kpi-section">
+          <div class="kpi-section-title">Productividad</div>
+          <div class="kpi-grid">
+            ${kpiCard('bar_chart', tchPpto, 't/ha', 'TCH PPTO', true)}
+            ${kpiCard('speed', tchm, 't/ha·mes', 'TCHM', true)}
+            ${kpiCard('history', tchAnt, 't/ha', 'TCH anterior')}
+            ${kpiCard('scale', tonsPpto, 't', 'Toneladas PPTO')}
+            ${kpiCard('query_stats', tonsEst, 't', 'Toneladas estimadas')}
+          </div>
+        </div>
+        <div class="kpi-section">
+          <div class="kpi-section-title">Responsables</div>
+          <div class="kpi-grid">
+            ${kpiCard('person', respZona, '', 'Responsable de zona')}
+            ${kpiCard('engineering', tecnico, '', 'Técnico agrícola')}
+          </div>
+        </div>
+      `;
+    }
+
+    function kpiCard(icon, value, unit, label, accent) {
+      const isEmpty = value === '—' || value === '' || value == null;
+      const accentClass = accent && !isEmpty ? ' accent' : '';
+      const emptyClass = isEmpty ? ' empty' : '';
+      return `<div class="kpi-card${accentClass}${emptyClass}">
+        <span class="kpi-icon material-symbols-outlined">${escapeHtml(icon)}</span>
+        <div class="kpi-value">${escapeHtml(value)}<span class="kpi-unit"> ${escapeHtml(unit)}</span></div>
+        <div class="kpi-label">${escapeHtml(label)}</div>
+      </div>`;
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
     }
 
     function updateModalNavUI() {
