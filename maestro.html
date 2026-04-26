@@ -224,8 +224,10 @@
       background: rgba(128, 128, 128, 0.5);
     }
 
-    /* Sticky identifier column. The column index is per-view (renderTable adds
-       .sticky-col to the correct cell). */
+    /* Sticky identifier columns. STATE.stickyCols (array) drives which columns
+       are pinned. renderTable adds .sticky-col + .sticky-col-N (with N = index)
+       and .sticky-col-last on the rightmost pinned column. JS measures column
+       widths and writes --sticky-left-N CSS variables for the offsets. */
     #maestro thead th.sticky-col {
       position: sticky;
       left: 0;
@@ -242,12 +244,23 @@
       font-weight: 600;
     }
 
+    /* Per-index left offsets. .sticky-col-0 stays at 0; subsequent columns
+       are pushed by the cumulative width of prior sticky columns (set by JS). */
+    #maestro thead th.sticky-col-1,
+    #maestro tbody td.sticky-col-1 { left: var(--sticky-left-1, 0px); }
+    #maestro thead th.sticky-col-2,
+    #maestro tbody td.sticky-col-2 { left: var(--sticky-left-2, 0px); }
+    #maestro thead th.sticky-col-3,
+    #maestro tbody td.sticky-col-3 { left: var(--sticky-left-3, 0px); }
+
     #maestro tbody tr:hover td.sticky-col {
       background: var(--sticky-body-hover-bg);
     }
 
-    #maestro thead th.sticky-col::after,
-    #maestro tbody td.sticky-col::after {
+    /* Right-edge fade only on the last pinned column (the visual boundary
+       between the pinned area and the scrolling area). */
+    #maestro thead th.sticky-col-last::after,
+    #maestro tbody td.sticky-col-last::after {
       content: '';
       position: absolute;
       top: 0;
@@ -1453,7 +1466,7 @@
         captionBase: 'Maestro de Suertes',
         searchPlaceholder: 'Buscar por suerte, zona, finca o código...',
         exportPrefix: 'maestro-suertes',
-        stickyCol: 0,          // SUERTE is column 0
+        stickyCols: [0],       // SUERTE
         processor: 'maestro',  // custom edad-hoy calculation
         modalRenderer: 'kpi',
         modalTitle: 'Detalle de la Suerte',
@@ -1476,7 +1489,7 @@
         captionBase: 'ZQM101 - Histórico de Cortes',
         searchPlaceholder: 'Buscar por suerte, sector, año...',
         exportPrefix: 'zqm-cortes',
-        stickyCol: 1,          // "Ubic Técnica" is col 1 (col 0 is AÑO)
+        stickyCols: [0, 1],    // AÑO + Ubic Técnica
         processor: 'generic',
         modalRenderer: 'kpi',
         modalTitle: 'Detalle del Corte',
@@ -1806,6 +1819,10 @@
       const tbody = document.querySelector('#maestro tbody');
       const thead = document.querySelector('#maestro thead');
 
+      // Per-view set of sticky column indices, sorted ascending.
+      const stickies = (STATE.stickyCols || []).slice().sort((a, b) => a - b);
+      const lastSticky = stickies.length ? stickies[stickies.length - 1] : -1;
+
       // Render Headers: rebuild when empty (first time or after view switch).
       if (thead.rows.length === 0) {
         thead.innerHTML = '';
@@ -1817,9 +1834,10 @@
           th.setAttribute('aria-sort', 'none');
           th.style.color = "var(--table-header-text)";
 
-          // Sticky identifier column: styled by CSS via .sticky-col.
-          if (index === STATE.stickyCol) {
-            th.classList.add('sticky-col');
+          // Sticky identifier columns: styled by CSS via .sticky-col + index.
+          if (stickies.includes(index)) {
+            th.classList.add('sticky-col', `sticky-col-${index}`);
+            if (index === lastSticky) th.classList.add('sticky-col-last');
           } else {
             th.style.background = "var(--table-header-bg)";
           }
@@ -1864,9 +1882,10 @@
           const td = document.createElement('td');
           td.className = "px-4 py-2.5 whitespace-nowrap transition-colors";
 
-          // Sticky identifier column: CSS handles color/background.
-          if (index === STATE.stickyCol) {
-            td.classList.add('sticky-col');
+          // Sticky identifier columns: CSS handles color/background.
+          if (stickies.includes(index)) {
+            td.classList.add('sticky-col', `sticky-col-${index}`);
+            if (index === lastSticky) td.classList.add('sticky-col-last');
           } else {
             td.style.color = "var(--text-muted)";
           }
@@ -1902,8 +1921,11 @@
       document.getElementById('prevPage').disabled = STATE.currentPage === 1;
       document.getElementById('nextPage').disabled = STATE.currentPage >= totalPages;
 
-      // Re-evaluate horizontal-scroll hint after content swap
-      requestAnimationFrame(updateScrollFade);
+      // Re-evaluate horizontal-scroll hint and sticky offsets after content swap
+      requestAnimationFrame(() => {
+        updateScrollFade();
+        updateStickyOffsets();
+      });
     }
 
     // =======================
@@ -2091,12 +2113,32 @@
       fade.classList.toggle('visible', remaining > 8);
     }
 
+    // Measure widths of pinned columns and publish --sticky-left-N CSS vars
+    // so columns 1, 2, ... start right after the cumulative width of prior
+    // pinned columns. Called after every render and on resize.
+    function updateStickyOffsets() {
+      const stickies = (STATE.stickyCols || []).slice().sort((a, b) => a - b);
+      if (stickies.length <= 1) return;
+      const ths = document.querySelectorAll('#maestro thead th');
+      if (!ths.length) return;
+      let cumLeft = 0;
+      stickies.forEach(idx => {
+        document.documentElement.style.setProperty(`--sticky-left-${idx}`, `${cumLeft}px`);
+        const th = ths[idx];
+        if (th) cumLeft += th.getBoundingClientRect().width;
+      });
+    }
+
     function setupScrollFade() {
       const scroller = document.getElementById('tableScroll');
       if (!scroller) return;
       scroller.addEventListener('scroll', updateScrollFade, { passive: true });
-      window.addEventListener('resize', updateScrollFade);
+      window.addEventListener('resize', () => {
+        updateScrollFade();
+        updateStickyOffsets();
+      });
       requestAnimationFrame(updateScrollFade);
+      requestAnimationFrame(updateStickyOffsets);
     }
 
     // =======================
