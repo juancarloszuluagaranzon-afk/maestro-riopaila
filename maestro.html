@@ -1132,7 +1132,7 @@
         <div class="flex flex-col">
           <h1 class="font-bold text-base leading-none tracking-tight" id="appTitleText" style="color: var(--text-main)">Maestro de <span
               class="text-teal-400">Suertes</span></h1>
-          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.2.0</span>
+          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.2.1</span>
         </div>
       </div>
 
@@ -1455,7 +1455,7 @@
     // NOTE: `version` below MUST match service-worker.js (CACHE_VERSION),
     // index.html (APP_VERSION) and the <span id="appVersion"> text in the header.
     const CONFIG = {
-      version: 'v2.2.0',
+      version: 'v2.2.1',
       csvFile: 'maestro.csv',
       pageSize: 25
     };
@@ -1845,20 +1845,31 @@
       STATE.edadColumnIndex = -1;
     }
 
-    // Helper: Parse DD/MM/YYYY or YYYY-MM-DD
+    // Helper: Parse DD/MM/YYYY, YYYY-MM-DD, or an Excel serial date number.
+    // Some CSV exports (e.g. the Riopaila rows) store dates as Excel serials such
+    // as 44170 (= 2020-12-05), optionally with a fractional time-of-day part like
+    // 46354.25. Without this, parseDate returned null for those rows and the
+    // "EDAD HOY MESES" calculation fell back to 0.0.
     function parseDate(dateStr) {
-      if (!dateStr) return null;
-      // Handle DD/MM/YYYY
-      if (dateStr.includes('/')) {
-        const parts = dateStr.split('/');
+      if (dateStr === null || dateStr === undefined) return null;
+      const s = String(dateStr).trim();
+      if (!s) return null;
+      // DD/MM/YYYY
+      if (s.includes('/')) {
+        const parts = s.split('/');
         if (parts.length === 3) {
-          // Assume DD/MM/YYYY
           return new Date(parts[2], parts[1] - 1, parts[0]);
         }
       }
-      // Handle YYYY-MM-DD
-      if (dateStr.includes('-')) {
-        return new Date(dateStr);
+      // YYYY-MM-DD (ISO)
+      if (s.includes('-')) {
+        return new Date(s);
+      }
+      // Excel serial date (1900 system; day 0 = 1899-12-30, accounting for the
+      // legacy 1900 leap-year bug). Accepts a comma or dot decimal separator.
+      const serial = Number(s.replace(',', '.'));
+      if (Number.isFinite(serial) && serial > 0) {
+        return new Date(Date.UTC(1899, 11, 30) + Math.round(serial * 86400000));
       }
       return null;
     }

@@ -1,6 +1,6 @@
 // Version constant. MUST match index.html (APP_VERSION, visible "v..." text)
 // and maestro.html (CONFIG.version, #appVersion span). Bump all four on release.
-const CACHE_VERSION = 'v2.2.0'; // Selección de empresa (Riopaila / Castilla) desde el inicio
+const CACHE_VERSION = 'v2.2.1'; // Fix edad: fechas en serial de Excel (Riopaila)
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
