@@ -1,6 +1,6 @@
 // Version constant. MUST match index.html (APP_VERSION, visible "v..." text)
 // and maestro.html (CONFIG.version, #appVersion span). Bump all four on release.
-const CACHE_VERSION = 'v2.1.0'; // ZQM view + bottom nav
+const CACHE_VERSION = 'v2.2.0'; // Selección de empresa (Riopaila / Castilla) desde el inicio
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
@@ -14,7 +14,8 @@ const CRITICAL_URLS = [
   BASE + 'manifest.json',
   BASE + 'service-worker.js',
   BASE + 'icon-192.png',
-  BASE + 'icon-512.png'
+  BASE + 'icon-512.png',
+  BASE + 'logo-castilla.png'
 ];
 
 // ===============================

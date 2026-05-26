@@ -1132,7 +1132,7 @@
         <div class="flex flex-col">
           <h1 class="font-bold text-base leading-none tracking-tight" id="appTitleText" style="color: var(--text-main)">Maestro de <span
               class="text-teal-400">Suertes</span></h1>
-          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.1.0</span>
+          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.2.0</span>
         </div>
       </div>
 
@@ -1167,6 +1167,32 @@
         <span class="material-symbols-outlined text-blue-400">wifi_off</span>
         <span class="text-sm text-slate-200"><strong>Modo Offline:</strong> Mostrando datos guardados en el
           dispositivo.</span>
+      </div>
+
+      <!-- Company scope banner (Maestro): shown when a company was chosen on the home screen -->
+      <div id="companyBanner"
+        class="hidden glass-panel border-l-4 border-l-teal-500 p-3 rounded-xl flex items-center gap-3 animate-fade-in-down">
+        <span class="material-symbols-outlined text-teal-400">apartment</span>
+        <span class="text-sm text-slate-200">Mostrando suertes de <strong id="companyBannerName"
+            class="text-white">—</strong></span>
+        <button type="button" onclick="window.location.href='index.html'"
+          class="ml-auto text-xs font-semibold text-teal-400 hover:text-teal-300 flex items-center gap-1 transition-colors">
+          <span class="material-symbols-outlined text-base">swap_horiz</span>
+          Cambiar empresa
+        </button>
+      </div>
+
+      <!-- No company selected (Maestro): prompt to pick one on the home screen -->
+      <div id="noCompanyBanner"
+        class="hidden glass-panel border-l-4 border-l-amber-500 p-4 rounded-xl flex items-center gap-3 animate-fade-in-down">
+        <span class="material-symbols-outlined text-amber-400">apartment</span>
+        <span class="text-sm text-slate-200"><strong>Selecciona una empresa</strong> en el inicio para ver sus
+          suertes.</span>
+        <button type="button" onclick="window.location.href='index.html'"
+          class="ml-auto text-xs font-semibold text-amber-300 hover:text-amber-200 flex items-center gap-1 transition-colors">
+          <span class="material-symbols-outlined text-base">home</span>
+          Ir al inicio
+        </button>
       </div>
 
       <!-- Error Banner -->
@@ -1429,7 +1455,7 @@
     // NOTE: `version` below MUST match service-worker.js (CACHE_VERSION),
     // index.html (APP_VERSION) and the <span id="appVersion"> text in the header.
     const CONFIG = {
-      version: 'v2.1.0',
+      version: 'v2.2.0',
       csvFile: 'maestro.csv',
       pageSize: 25
     };
@@ -1450,6 +1476,7 @@
         sortDirection: 'asc',
         corteColumnIndex: -1,
         edadColumnIndex: -1,
+        empresaColumnIndex: -1,
         modalRowIndex: -1,
         multiFilters: { corte: new Set(), edad: new Set() },
         singleFilters: {},   // keyed by selectId
@@ -1510,6 +1537,27 @@
 
     let CURRENT_VIEW_KEY = 'maestro';
     let STATE = VIEWS[CURRENT_VIEW_KEY];
+
+    // =======================
+    // ALCANCE POR EMPRESA
+    // =======================
+    // The home screen (index.html) opens this page with ?empresa=RIOP (Riopaila)
+    // or ?empresa=CAST,CAUC (Castilla, which includes the CAUC suertes). The Maestro
+    // view is then locked to those EMPRESA codes. ZQM has no EMPRESA column and is
+    // never company-scoped. With no param, the Maestro view shows no rows and prompts
+    // the user to pick a company from the home screen.
+    const COMPANY = (function () {
+      const raw = new URLSearchParams(window.location.search).get('empresa');
+      if (!raw) return { active: false, set: null, label: '' };
+      const codes = decodeURIComponent(raw)
+        .split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+      if (!codes.length) return { active: false, set: null, label: '' };
+      const set = new Set(codes);
+      let label = codes.join(', ');
+      if (set.has('RIOP')) label = 'Riopaila';
+      else if (set.has('CAST') || set.has('CAUC')) label = 'Castilla';
+      return { active: true, set, label };
+    })();
 
     // Google Sheets / Excel error sentinels that sometimes leak into CSV exports
     const ERROR_VALUES = new Set([
@@ -1750,6 +1798,9 @@
         STATE.headers.push('EDAD HOY MESES');
         STATE.edadColumnIndex = STATE.headers.length - 1;
       }
+
+      // EMPRESA column — used by the ?empresa= scope filter (see COMPANY).
+      STATE.empresaColumnIndex = STATE.headers.findIndex(h => normalizeHeader(h) === 'EMPRESA');
 
       STATE.rows = [];
       const now = new Date();
@@ -2010,6 +2061,20 @@
         const s = document.getElementById(col.selectId);
         if (s && s.options[0]) s.options[0].textContent = col.label;
       });
+
+      updateCompanyUi();
+    }
+
+    // Show/hide the company-scope banners. Only the Maestro view is company-scoped;
+    // ZQM (no EMPRESA column) never shows them.
+    function updateCompanyUi() {
+      const isMaestro = CURRENT_VIEW_KEY === 'maestro';
+      const banner = document.getElementById('companyBanner');
+      const noBanner = document.getElementById('noCompanyBanner');
+      const nameEl = document.getElementById('companyBannerName');
+      if (nameEl) nameEl.textContent = COMPANY.label || '—';
+      if (banner) banner.classList.toggle('hidden', !(isMaestro && COMPANY.active));
+      if (noBanner) noBanner.classList.toggle('hidden', !(isMaestro && !COMPANY.active));
     }
 
     // Persists current UI inputs into the active view's state before switching out.
@@ -2329,6 +2394,21 @@
 
       let rows = STATE.rows;
 
+      // Baseline company scope (Maestro view only). Locked by the ?empresa= URL param
+      // set on the home screen. No param → no rows (user must pick a company).
+      if (CURRENT_VIEW_KEY === 'maestro') {
+        if (!COMPANY.active) {
+          rows = [];
+        } else if (STATE.empresaColumnIndex !== -1) {
+          const empIdx = STATE.empresaColumnIndex;
+          rows = rows.filter(r => COMPANY.set.has((r[empIdx] || '').trim().toUpperCase()));
+        }
+      }
+
+      // Baseline count for the active scope (company-filtered), used by the results
+      // counter so "X de Y" reflects the chosen company, not the whole dataset.
+      const scopedTotal = rows.length;
+
       // Column filters
       STATE.filterConfig.forEach(col => {
         if (col.index === -1) return;
@@ -2405,8 +2485,8 @@
       const countEl = document.getElementById('resultCount');
       if (countEl) {
         countEl.textContent = anyActive
-          ? `${STATE.filteredRows.length} de ${STATE.rows.length}`
-          : `${STATE.rows.length}`;
+          ? `${STATE.filteredRows.length} de ${scopedTotal}`
+          : `${scopedTotal}`;
       }
 
       updateFilterBadge();

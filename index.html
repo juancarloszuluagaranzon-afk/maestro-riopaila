@@ -239,24 +239,41 @@
       <p class="text-slate-400 font-medium text-base">Maestro de Suertes Offline</p>
     </div>
 
-    <!-- Primary Action -->
-    <button onclick="window.location.href='maestro.html'" data-ai-action="open-app"
-      class="animate-float-in animate-delay-300 group relative w-full h-16 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 rounded-2xl shadow-[0_0_40px_-10px_rgba(13,148,136,0.3)] transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] overflow-hidden flex items-center justify-between px-2">
+    <!-- Primary Action: elegir empresa -->
+    <p class="animate-float-in animate-delay-300 text-slate-400 text-sm font-semibold uppercase tracking-wide mb-4 text-center w-full">
+      Selecciona tu empresa
+    </p>
 
-      <!-- Button background glow -->
-      <div
-        class="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out skew-x-12">
-      </div>
+    <div class="animate-float-in animate-delay-300 w-full flex flex-col gap-4">
+      <!-- Riopaila → solo suertes RIOP -->
+      <button onclick="window.location.href='maestro.html?empresa=RIOP'" data-ai-action="open-riopaila"
+        class="group relative w-full h-20 glass-button rounded-2xl overflow-hidden flex items-center px-4 gap-4">
+        <span class="w-14 h-14 flex items-center justify-center bg-white rounded-xl shrink-0 shadow-md">
+          <img src="icon-192.png" alt="Logo Riopaila Agrícola" class="w-12 h-12 object-contain">
+        </span>
+        <span class="flex flex-col items-start mr-auto">
+          <span class="text-white font-bold text-lg leading-tight">Riopaila</span>
+          <span class="text-slate-400 text-xs">Agrícola S.A.</span>
+        </span>
+        <span
+          class="material-symbols-outlined text-white/40 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+      </button>
 
-      <span class="w-12 h-12 flex items-center justify-center bg-white/10 rounded-xl ml-1">
-        <span class="material-symbols-outlined text-white">table_view</span>
-      </span>
-
-      <span class="text-white font-bold text-lg tracking-wide mr-auto ml-4">Abrir Maestro</span>
-
-      <span
-        class="material-symbols-outlined text-white/50 group-hover:translate-x-1 transition-transform mr-4">arrow_forward</span>
-    </button>
+      <!-- Castilla → suertes CAST + CAUC -->
+      <button onclick="window.location.href='maestro.html?empresa=CAST,CAUC'" data-ai-action="open-castilla"
+        class="group relative w-full h-20 glass-button rounded-2xl overflow-hidden flex items-center px-4 gap-4">
+        <span
+          class="w-14 h-14 flex items-center justify-center bg-slate-800 rounded-xl shrink-0 shadow-md ring-1 ring-white/10">
+          <img src="logo-castilla.png" alt="Logo Castilla Agrícola" class="w-11 h-11 object-contain">
+        </span>
+        <span class="flex flex-col items-start mr-auto">
+          <span class="text-white font-bold text-lg leading-tight">Castilla</span>
+          <span class="text-slate-400 text-xs">Agrícola</span>
+        </span>
+        <span
+          class="material-symbols-outlined text-white/40 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+      </button>
+    </div>
 
     <!-- Secondary Actions -->
     <div class="animate-float-in animate-delay-300 mt-6 grid grid-cols-2 gap-4 w-full">
@@ -275,7 +292,7 @@
 
     <!-- App Version -->
     <div class="mt-12 text-slate-600 font-mono text-xs animate-float-in animate-delay-300">
-      v2.1.0 • 2026 Edition
+      v2.2.0 • 2026 Edition
     </div>
 
   </main>
@@ -307,7 +324,7 @@
     // ==============================
     // Version constant. MUST match service-worker.js (CACHE_VERSION),
     // maestro.html (CONFIG.version, #appVersion span) and the "v..." text at the bottom.
-    const APP_VERSION = 'v2.1.0';
+    const APP_VERSION = 'v2.2.0';
     const CACHE_NAME = `riopaila-maestro-${APP_VERSION}`;
     let deferredPrompt = null;
 
