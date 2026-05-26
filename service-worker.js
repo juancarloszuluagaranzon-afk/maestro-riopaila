@@ -1,6 +1,6 @@
 // Version constant. MUST match index.html (APP_VERSION, visible "v..." text)
 // and maestro.html (CONFIG.version, #appVersion span). Bump all four on release.
-const CACHE_VERSION = 'v2.2.1'; // Fix edad: fechas en serial de Excel (Riopaila)
+const CACHE_VERSION = 'v2.2.2'; // Nuevo logo de Riopaila en el botón de empresa
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
@@ -15,7 +15,8 @@ const CRITICAL_URLS = [
   BASE + 'service-worker.js',
   BASE + 'icon-192.png',
   BASE + 'icon-512.png',
-  BASE + 'logo-castilla.png'
+  BASE + 'logo-castilla.png',
+  BASE + 'logo-riopaila.png'
 ];
 
 // ===============================
