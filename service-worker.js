@@ -1,6 +1,6 @@
 // Version constant. MUST match index.html (APP_VERSION, visible "v..." text)
 // and maestro.html (CONFIG.version, #appVersion span). Bump all four on release.
-const CACHE_VERSION = 'v2.2.2'; // Nuevo logo de Riopaila en el botón de empresa
+const CACHE_VERSION = 'v2.2.3'; // Título de inicio: "Maestro de Suertes" (multi-empresa)
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
