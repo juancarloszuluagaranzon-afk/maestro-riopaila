@@ -260,7 +260,8 @@
     /* Right-edge fade only on the last pinned column (the visual boundary
        between the pinned area and the scrolling area). */
     #maestro thead th.sticky-col-last::after,
-    #maestro tbody td.sticky-col-last::after {
+    #maestro tbody td.sticky-col-last::after,
+    #maestro tfoot td.sticky-col-last::after {
       content: '';
       position: absolute;
       top: 0;
@@ -269,6 +270,75 @@
       width: 8px;
       pointer-events: none;
       background: linear-gradient(to right, rgba(0, 0, 0, 0.18), transparent);
+    }
+
+    /* =========================================================
+       Totals row (tfoot). Pinned to the bottom of the scroll area
+       and aggregated over all filtered rows. Maestro view only;
+       ZQM renders no tfoot row. Mirrors the sticky-column logic so
+       the SUERTE cell stays pinned to the bottom-left corner.
+       ========================================================= */
+    #maestro tfoot td {
+      position: sticky;
+      bottom: 0;
+      z-index: 20;
+      background: var(--table-header-bg);
+      color: var(--text-main);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      border-top: 2px solid var(--success-text);
+      box-shadow: 0 -6px 14px -8px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Identifier (SUERTE) cell: pinned both left and bottom (corner). */
+    #maestro tfoot td.sticky-col {
+      left: 0;
+      z-index: 24;
+      background: var(--sticky-header-bg);
+    }
+
+    .totals-cell.totals-label {
+      color: var(--success-text);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .totals-count {
+      display: block;
+      margin-top: 0.1rem;
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-transform: none;
+      color: var(--text-muted);
+    }
+
+    .totals-cell.totals-value {
+      color: var(--success-text);
+    }
+
+    /* Secondary line inside a totals cell (e.g. TCH estimado under TCH PPTO). */
+    .totals-secondary {
+      display: block;
+      margin-top: 0.05rem;
+      font-size: 0.66rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    /* Inline hint after a value (e.g. "ponderada" next to the weighted age). */
+    .totals-hint {
+      margin-left: 0.3rem;
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--text-muted);
+    }
+
+    /* Light theme: softer top shadow on the totals row. */
+    :root.light #maestro tfoot td {
+      box-shadow: 0 -4px 12px -8px rgba(15, 23, 42, 0.18);
     }
 
     /* Empty / error values (#N/D, #N/A, #REF!, blanks, etc.) */
@@ -914,6 +984,70 @@
     }
 
     /* =========================================================
+       Simple per-row detail list (Maestro modal). One field per
+       row: uppercase muted label on the left, value on the right.
+       Replaces the KPI card grid for the Maestro detail view.
+       ========================================================= */
+    .detail-id {
+      padding-bottom: 0.85rem;
+      margin-bottom: 0.25rem;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .detail-id-suerte {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: 0.5px;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .detail-id-sub {
+      margin-top: 0.2rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      letter-spacing: 0.3px;
+    }
+
+    .detail-list .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 0.6rem 0.15rem;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .detail-list .detail-row:last-child {
+      border-bottom: 0;
+    }
+
+    .detail-label {
+      flex: 0 0 42%;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      word-break: break-word;
+    }
+
+    .detail-value {
+      flex: 1 1 auto;
+      text-align: right;
+      color: var(--text-main);
+      font-size: 0.9rem;
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    /* Empty/error values keep the muted italic treatment. */
+    .detail-value.cell-empty {
+      font-weight: 500;
+    }
+
+    /* =========================================================
        Light-theme overrides for elements styled with hardcoded
        dark Tailwind utility classes. Dark theme stays unchanged.
        ========================================================= */
@@ -1132,7 +1266,7 @@
         <div class="flex flex-col">
           <h1 class="font-bold text-base leading-none tracking-tight" id="appTitleText" style="color: var(--text-main)">Maestro de <span
               class="text-teal-400">Suertes</span></h1>
-          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.2.4</span>
+          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.2.5</span>
         </div>
       </div>
 
@@ -1347,6 +1481,9 @@
             <tbody class="divide-y divide-slate-800/50 text-sm text-slate-300">
               <!-- Rows injected by JS -->
             </tbody>
+            <tfoot id="maestroFoot">
+              <!-- Totals row injected by JS (Maestro view only) -->
+            </tfoot>
           </table>
         </div>
         <!-- Right-edge fade to hint horizontal scroll -->
@@ -1455,7 +1592,7 @@
     // NOTE: `version` below MUST match service-worker.js (CACHE_VERSION),
     // index.html (APP_VERSION) and the <span id="appVersion"> text in the header.
     const CONFIG = {
-      version: 'v2.2.4',
+      version: 'v2.2.5',
       csvFile: 'maestro.csv',
       pageSize: 25
     };
@@ -1507,6 +1644,23 @@
           corte: { label: 'Corte', allLabel: 'Todos', match: h => normalizeHeader(h) === 'NUMERO DE CORTE' },
           // Maestro uses the calculated "EDAD HOY MESES" column (set by processor).
           edad:  { label: 'Edad',  allLabel: 'Todas', useCalculated: true }
+        },
+        // Totals row (tfoot) aggregated over ALL filtered rows. Declarative:
+        // each metric targets a column by normalized header name. Computed by
+        // renderTotals(). ZQM has no totalsConfig, so it shows no totals row.
+        totalsConfig: {
+          label: 'TOTALES',
+          metrics: [
+            { col: 'AREA NETA HA',        type: 'sum',         decimals: 2, unit: 'ha' },
+            { col: 'EDAD HOY MESES',      type: 'weightedAvg', weightBy: 'AREA NETA HA', decimals: 1, hint: 'ponderada' },
+            { col: 'TONELADAS PPTO',      type: 'sum',         decimals: 0 },
+            { col: 'TONELADAS ESTIMADAS', type: 'sum',         decimals: 0 },
+            // TCH del total = Σtoneladas / Σárea (no el promedio de los TCH por fila).
+            // El maestro no tiene columna propia de "TCH estimado", así que el TCH
+            // estimado se muestra como segunda línea dentro de la celda de TCH PPTO.
+            { col: 'TCH PPTO',            type: 'ratio',       num: 'TONELADAS PPTO', den: 'AREA NETA HA', decimals: 1,
+              secondary: { label: 'est.', num: 'TONELADAS ESTIMADAS', den: 'AREA NETA HA' } }
+          ]
         }
       }),
       zqm: Object.assign(makeViewState(), {
@@ -1912,6 +2066,115 @@
     // =======================
     // RENDERIZADO
     // =======================
+    // Format a number in Colombian Spanish style (dot thousands, comma decimals).
+    // Returns '—' when the value is not a finite number.
+    function formatNumberEs(n, decimals) {
+      if (n === null || n === undefined || !Number.isFinite(n)) return '—';
+      const d = Number.isFinite(decimals) ? decimals : 0;
+      return n.toLocaleString('es-CO', { minimumFractionDigits: d, maximumFractionDigits: d });
+    }
+
+    // Build the totals row (tfoot) for the active view, aggregated over ALL
+    // filtered rows (STATE.filteredRows), independent of the current page.
+    // Driven by STATE.totalsConfig. Views without a totalsConfig (e.g. ZQM)
+    // render no row.
+    function renderTotals() {
+      const foot = document.getElementById('maestroFoot');
+      if (!foot) return;
+
+      const cfg = STATE.totalsConfig;
+      // No config (ZQM) or no rows in scope → no totals row.
+      if (!cfg || !STATE.filteredRows.length) {
+        foot.innerHTML = '';
+        return;
+      }
+
+      // Resolve a column index from a header name (tolerant matching).
+      const idxOf = (name) => {
+        const target = normalizeHeader(name);
+        return STATE.headers.findIndex(h => normalizeHeader(h) === target);
+      };
+
+      // Accumulate per metric, keyed by the column index it renders into.
+      const cellByIndex = {};
+      cfg.metrics.forEach(m => {
+        const colIdx = idxOf(m.col);
+        if (colIdx === -1) return;
+
+        let text = '—';
+        if (m.type === 'sum') {
+          let sum = 0, any = false;
+          for (const r of STATE.filteredRows) {
+            const v = parseLocaleNumber(r[colIdx]);
+            if (!isNaN(v)) { sum += v; any = true; }
+          }
+          if (any) text = `${formatNumberEs(sum, m.decimals)}${m.unit ? ' ' + m.unit : ''}`;
+        } else if (m.type === 'weightedAvg') {
+          const wIdx = idxOf(m.weightBy);
+          let num = 0, den = 0;
+          for (const r of STATE.filteredRows) {
+            const val = parseLocaleNumber(r[colIdx]);
+            const w = wIdx === -1 ? 1 : parseLocaleNumber(r[wIdx]);
+            if (!isNaN(val) && !isNaN(w)) { num += val * w; den += w; }
+          }
+          if (den > 0) {
+            const hint = m.hint ? `<span class="totals-hint">${escapeHtml(m.hint)}</span>` : '';
+            text = `${formatNumberEs(num / den, m.decimals)}${hint}`;
+          }
+        } else if (m.type === 'ratio') {
+          const ratio = (numName, denName) => {
+            const nIdx = idxOf(numName), dIdx = idxOf(denName);
+            if (nIdx === -1 || dIdx === -1) return NaN;
+            let n = 0, d = 0;
+            for (const r of STATE.filteredRows) {
+              const nv = parseLocaleNumber(r[nIdx]);
+              const dv = parseLocaleNumber(r[dIdx]);
+              if (!isNaN(nv)) n += nv;
+              if (!isNaN(dv)) d += dv;
+            }
+            return d > 0 ? n / d : NaN;
+          };
+          const primary = ratio(m.num, m.den);
+          text = formatNumberEs(primary, m.decimals);
+          if (m.secondary) {
+            const sec = ratio(m.secondary.num, m.secondary.den);
+            const secText = formatNumberEs(sec, m.decimals);
+            text += `<span class="totals-secondary">${escapeHtml(m.secondary.label)} ${secText}</span>`;
+          }
+        }
+        cellByIndex[colIdx] = text;
+      });
+
+      // Sticky identifier column(s) — same pinning logic as renderTable.
+      const stickies = (STATE.stickyCols || []).slice().sort((a, b) => a - b);
+      const lastSticky = stickies.length ? stickies[stickies.length - 1] : -1;
+      const labelCol = stickies.length ? stickies[0] : 0;
+
+      const tr = document.createElement('tr');
+      STATE.headers.forEach((_, index) => {
+        const td = document.createElement('td');
+        td.className = 'px-4 py-2.5 whitespace-nowrap totals-cell';
+
+        if (stickies.includes(index)) {
+          td.classList.add('sticky-col', `sticky-col-${index}`);
+          if (index === lastSticky) td.classList.add('sticky-col-last');
+        }
+
+        if (index === labelCol) {
+          td.classList.add('totals-label');
+          td.innerHTML =
+            `${escapeHtml(cfg.label)}<span class="totals-count">${STATE.filteredRows.length} suertes</span>`;
+        } else if (cellByIndex[index] !== undefined) {
+          td.classList.add('totals-value');
+          td.innerHTML = cellByIndex[index];
+        }
+        tr.appendChild(td);
+      });
+
+      foot.innerHTML = '';
+      foot.appendChild(tr);
+    }
+
     function renderTable() {
       const tbody = document.querySelector('#maestro tbody');
       const thead = document.querySelector('#maestro thead');
@@ -2012,6 +2275,9 @@
 
       tbody.innerHTML = '';
       tbody.appendChild(fragment);
+
+      // Totals row (aggregated over all filtered rows, independent of page)
+      renderTotals();
 
       // UI Updates
       document.getElementById('pageInfo').textContent =
@@ -2171,6 +2437,9 @@
       // Force header rebuild on next renderTable
       const thead = document.querySelector('#maestro thead');
       if (thead) thead.innerHTML = '';
+      // Clear any stale totals row before the target view re-renders.
+      const tfoot = document.getElementById('maestroFoot');
+      if (tfoot) tfoot.innerHTML = '';
 
       if (!STATE.loaded) {
         // First time opening this view — fetch CSV lazily.
@@ -2711,7 +2980,7 @@
     // Per-view KPI renderer dispatch. Falls back to the field-list layout
     // for views that don't define a custom KPI renderer.
     const MODAL_KPI_RENDERERS = {
-      maestro: (row, content) => renderModalKpiMaestro(row, content),
+      maestro: (row, content) => renderModalListMaestro(row, content),
       zqm:     (row, content) => renderModalKpiZqm(row, content)
     };
 
@@ -2872,115 +3141,48 @@
       `;
     }
 
-    // KPI dashboard for Maestro: identifies the suerte and shows status,
-    // schedule, productivity estimates and responsibles.
-    function renderModalKpiMaestro(row, content) {
-      content.className = 'kpi-modal';
+    // Simple per-row detail list for Maestro: one field per row (label + value),
+    // no KPI cards. Keeps a slim identity header with the suerte code. Shows
+    // every column in the same order as the table; dates are formatted and
+    // empty/error cells fall back to "—".
+    function renderModalListMaestro(row, content) {
+      content.className = 'detail-list-modal';
 
       const headers = STATE.headers;
       const findIdx = (norm) => headers.findIndex(h => normalizeHeader(h) === norm);
-      const findIdxStarts = (prefix) => headers.findIndex(h => normalizeHeader(h).startsWith(prefix));
-      const getByIdx = (idx) => idx === -1 ? '—' : sanitizeCell(row[idx]).text;
       const getFirst = (...norms) => {
         for (const n of norms) {
           const i = findIdx(n);
-          if (i !== -1) return getByIdx(i);
+          if (i !== -1) return sanitizeCell(row[i]).text;
         }
         return '—';
       };
 
-      // Identification
-      const suerte   = getFirst('SUERTE');
-      const finca    = getFirst('FINCA');
-      const zona     = getFirst('ZONA');
-      const variedad = getFirst('VARIEDAD');
+      // Slim identity header
+      const suerte = getFirst('SUERTE');
+      const finca  = getFirst('FINCA');
+      const zona   = getFirst('ZONA');
 
-      // Características
-      const area     = getFirst('AREA');
-      const uso      = getFirst('USO DE LA SUERTE');
-      const zonaAgro = getFirst('ZONA AGROECOLOGICA', 'ZONA AGROECOLÓGICA');
-
-      // Estado del cultivo (calculated edad highlighted)
-      const edadHoy  = STATE.edadColumnIndex !== -1
-        ? sanitizeCell(row[STATE.edadColumnIndex]).text
-        : '—';
-      const corteN   = getFirst('NUMERO DE CORTE');
-
-      // Cronograma (formatted from Excel serials/ISO to DD/MM/YYYY for display)
-      const fmtDate = (v) => v === '—' ? v : formatDateDisplay(v);
-      const fSiembra = fmtDate(getFirst('FECHA DE SIEMBRA'));
-      const fUltCort = fmtDate(getFirst('FECHA DE ULTIMO CORTE', 'FECHA DE ÚLTIMO CORTE'));
-      const fProxCor = fmtDate(getFirst('FECHA DEL PROXIMO CORTE', 'FECHA DEL PRÓXIMO CORTE'));
-
-      // Productividad
-      const tchPpto  = getFirst('TCH PPTO');
-      const tchAnt   = getFirst('TCH ANTERIOR');
-      const tchm     = getFirst('TCHM');
-      const tonsPpto = getFirst('TONELADAS PPTO');
-      const tonsEst  = getFirst('TONELADAS ESTIMADAS');
-
-      // Responsables
-      const respZona = getFirst('RESPONSABLE ZONA');
-      const tecnico  = getFirst('TECNICO AGRICOLA RESPONSABLE', 'TÉCNICO AGRÍCOLA RESPONSABLE', 'TECNICO AGRÍCOLA RESPONSABLE');
-
-      const variedadBadge = variedad && variedad !== '—'
-        ? `<span class="kpi-badge">${escapeHtml(variedad)}</span>`
-        : '';
+      // One row per column: label + value
+      let rowsHtml = '';
+      headers.forEach((header, i) => {
+        const sanitized = sanitizeCell(row[i]);
+        const valueText = sanitized.isEmpty
+          ? sanitized.text
+          : (isDateHeader(header) ? formatDateDisplay(sanitized.text) : sanitized.text);
+        const emptyCls = sanitized.isEmpty ? ' cell-empty' : '';
+        rowsHtml += `<div class="detail-row">`
+          + `<span class="detail-label">${escapeHtml(header)}</span>`
+          + `<span class="detail-value${emptyCls}">${escapeHtml(valueText)}</span>`
+          + `</div>`;
+      });
 
       content.innerHTML = `
-        <div class="kpi-header">
-          <div class="kpi-suerte">${escapeHtml(suerte)}</div>
-          <div class="kpi-sector">${escapeHtml(finca)} · Zona ${escapeHtml(zona)}</div>
-          ${variedadBadge ? `<div class="kpi-date" style="margin-top:.55rem">
-            <span class="material-symbols-outlined">grass</span>
-            ${escapeHtml(variedad)}
-          </div>` : ''}
+        <div class="detail-id">
+          <div class="detail-id-suerte">${escapeHtml(suerte)}</div>
+          <div class="detail-id-sub">${escapeHtml(finca)} · Zona ${escapeHtml(zona)}</div>
         </div>
-        <div class="kpi-section">
-          <div class="kpi-section-title">Características</div>
-          <div class="kpi-grid">
-            ${kpiCard('square_foot', area, 'ha', 'Área')}
-            ${kpiCard('category', uso, '', 'Uso de la suerte')}
-            ${kpiCard('terrain', zonaAgro, '', 'Zona agroecológica')}
-          </div>
-        </div>
-        <div class="kpi-section">
-          <div class="kpi-section-title">Estado del cultivo</div>
-          <div class="kpi-grid">
-            ${kpiCard('schedule', edadHoy, 'meses', 'Edad hoy', true)}
-            ${kpiCard('content_cut', corteN, '', 'Número de corte')}
-          </div>
-        </div>
-        <div class="kpi-section">
-          <div class="kpi-section-title">Cronograma</div>
-          <div class="kpi-grid">
-            ${kpiCard('eco', fSiembra, '', 'Siembra')}
-            ${kpiCard('history', fUltCort, '', 'Último corte')}
-            ${kpiCard('event_upcoming', fProxCor, '', 'Próximo corte', true)}
-          </div>
-        </div>
-        <div class="kpi-section">
-          <div class="kpi-section-title">Corte anterior</div>
-          <div class="kpi-grid">
-            ${kpiCard('history', tchAnt, 't/ha', 'TCH anterior')}
-            ${kpiCard('speed', tchm, 't/ha·mes', 'TCHM')}
-          </div>
-        </div>
-        <div class="kpi-section">
-          <div class="kpi-section-title">Ppto y estimados</div>
-          <div class="kpi-grid">
-            ${kpiCard('bar_chart', tchPpto, 't/ha', 'TCH PPTO', true)}
-            ${kpiCard('scale', tonsPpto, 't', 'Toneladas PPTO')}
-            ${kpiCard('query_stats', tonsEst, 't', 'Toneladas estimadas', true)}
-          </div>
-        </div>
-        <div class="kpi-section">
-          <div class="kpi-section-title">Responsables</div>
-          <div class="kpi-grid">
-            ${kpiCard('person', respZona, '', 'Responsable de zona')}
-            ${kpiCard('engineering', tecnico, '', 'Técnico agrícola')}
-          </div>
-        </div>
+        <div class="detail-list">${rowsHtml}</div>
       `;
     }
 

@@ -1,6 +1,6 @@
 // Version constant. MUST match index.html (APP_VERSION, visible "v..." text)
 // and maestro.html (CONFIG.version, #appVersion span). Bump all four on release.
-const CACHE_VERSION = 'v2.2.4'; // Quita el logo superior de la pantalla de inicio
+const CACHE_VERSION = 'v2.2.5'; // Totalizadores al pie + detalle simple por fila
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
