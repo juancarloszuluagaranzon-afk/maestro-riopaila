@@ -1320,7 +1320,7 @@
         <div class="flex flex-col">
           <h1 class="font-bold text-base leading-none tracking-tight" id="appTitleText" style="color: var(--text-main)">Maestro de <span
               class="text-teal-400">Suertes</span></h1>
-          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.2.8</span>
+          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.2.9</span>
         </div>
       </div>
 
@@ -1656,7 +1656,7 @@
     // NOTE: `version` below MUST match service-worker.js (CACHE_VERSION),
     // index.html (APP_VERSION) and the <span id="appVersion"> text in the header.
     const CONFIG = {
-      version: 'v2.2.8',
+      version: 'v2.2.9',
       csvFile: 'maestro.csv',
       pageSize: 25
     };
@@ -2843,9 +2843,16 @@
       CURRENT_HEADER_COL = colIndex;
       if (!STATE.columnFilters[colIndex]) STATE.columnFilters[colIndex] = new Set();
 
-      const values = [...new Set(
-        getScopedRows().map(r => cellDisplayValue(colIndex, r[colIndex]))
-      )].sort((a, b) => compareColValues(colIndex, a, b));
+      // Options reflect every OTHER active filter (cross-filtering): selecting an
+      // age range, another column, or a search narrows what this list shows. The
+      // column's own current selections are always included so they stay
+      // visible/uncheckable even if other filters would otherwise hide them.
+      const set = STATE.columnFilters[colIndex];
+      const avail = new Set(
+        computeFilteredRows(colIndex).map(r => cellDisplayValue(colIndex, r[colIndex]))
+      );
+      set.forEach(v => avail.add(v));
+      const values = [...avail].sort((a, b) => compareColValues(colIndex, a, b));
       renderHeaderFilterOptions(colIndex, values);
 
       const search = pop.querySelector('.popover-search');
@@ -2968,28 +2975,24 @@
       }
     });
 
-    function applyFiltersAndSort() {
+    // Apply every active filter to the scoped rows. `excludeCol` (a column index,
+    // or -1 for none) skips that column's OWN header filter — used to build that
+    // column's dropdown so its options reflect every OTHER active filter
+    // (Excel-style cross-filtering: e.g. an age range narrows the other lists).
+    function computeFilteredRows(excludeCol) {
       const term = (document.getElementById('searchInput').value || '').toLowerCase();
-
-      // Baseline company scope (Maestro locked to the ?empresa= company; ZQM = all).
-      // Same scope used to build the filter options, so they always match.
       let rows = getScopedRows();
 
-      // Baseline count for the active scope (company-filtered), used by the results
-      // counter so "X de Y" reflects the chosen company, not the whole dataset.
-      const scopedTotal = rows.length;
-
-      // Column filters
+      // Toolbar single-select filters (zona / finca / variedad / uso)
       STATE.filterConfig.forEach(col => {
         if (col.index === -1) return;
         const select = document.getElementById(col.selectId);
         const value = select ? select.value : '';
-        select.dataset.active = value ? 'true' : 'false';
         if (!value) return;
         rows = rows.filter(r => (r[col.index] || '').trim() === value);
       });
 
-      // Multi-filter: Número de corte (integer values, stored as strings)
+      // Toolbar multi-filter: Número de corte
       if (STATE.corteColumnIndex !== -1 && STATE.multiFilters.corte.size > 0) {
         const idx = STATE.corteColumnIndex;
         rows = rows.filter(r => {
@@ -2998,32 +3001,45 @@
         });
       }
 
-      // Multi-filter: Edad (toolbar) — floor(value) buckets.
+      // Toolbar multi-filter: Edad ranges (floor buckets)
       if (STATE.edadColumnIndex !== -1 && STATE.multiFilters.edad.size > 0) {
         const idx = STATE.edadColumnIndex;
         rows = rows.filter(r => {
           const v = parseFloat(String(r[idx] || '').replace(',', '.'));
-          if (isNaN(v)) return false;
-          return STATE.multiFilters.edad.has(String(Math.floor(v)));
+          return !isNaN(v) && STATE.multiFilters.edad.has(String(Math.floor(v)));
         });
       }
 
-      // Per-column header filters (Excel-style). Each active column keeps only
-      // rows whose displayed value is in its selected set; columns combine (AND).
-      if (STATE.columnFilters) {
-        for (const key in STATE.columnFilters) {
-          const set = STATE.columnFilters[key];
-          if (set && set.size > 0) {
-            const ci = parseInt(key, 10);
-            rows = rows.filter(r => set.has(cellDisplayValue(ci, r[ci])));
-          }
+      // Per-column header filters (AND), skipping the excluded column's own filter.
+      for (const key in STATE.columnFilters) {
+        const set = STATE.columnFilters[key];
+        const ci = parseInt(key, 10);
+        if (set && set.size > 0 && ci !== excludeCol) {
+          rows = rows.filter(r => set.has(cellDisplayValue(ci, r[ci])));
         }
       }
 
-      // Text search (applies over already column-filtered rows for cheaper scan)
+      // Global text search
       if (term) {
         rows = rows.filter(row => row.some(cell => (cell || '').toLowerCase().includes(term)));
       }
+      return rows;
+    }
+
+    function applyFiltersAndSort() {
+      const term = (document.getElementById('searchInput').value || '').toLowerCase();
+
+      // Reflect active state on the toolbar selects (visual highlight).
+      STATE.filterConfig.forEach(col => {
+        const s = document.getElementById(col.selectId);
+        if (s) s.dataset.active = s.value ? 'true' : 'false';
+      });
+
+      // Baseline count for the active scope (company), used by the "X de Y" counter.
+      const scopedTotal = getScopedRows().length;
+
+      // Apply all active filters.
+      let rows = computeFilteredRows(-1);
 
       // Sort
       if (STATE.sortColumn !== -1) {

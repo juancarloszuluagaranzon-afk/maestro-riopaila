@@ -1,6 +1,6 @@
 // Version constant. MUST match index.html (APP_VERSION, visible "v..." text)
 // and maestro.html (CONFIG.version, #appVersion span). Bump all four on release.
-const CACHE_VERSION = 'v2.2.8'; // Filtros tipo Excel en todas las cabeceras de la tabla
+const CACHE_VERSION = 'v2.2.9'; // Filtros de cabecera con cross-filtering (opciones segun filtros activos)
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
