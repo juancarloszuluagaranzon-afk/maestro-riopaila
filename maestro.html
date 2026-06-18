@@ -471,6 +471,56 @@
       display: none;
     }
 
+    /* Search box inside a multi-select popover (e.g. the exact-age filter). */
+    .popover-search {
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 0.4rem;
+      padding: 0.4rem 0.6rem;
+      font-size: 0.78rem;
+      color: var(--input-text);
+      background: var(--input-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 0.4rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .popover-search:focus {
+      border-color: var(--success-text);
+      box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.18);
+    }
+
+    /* Funnel button on the EDAD HOY MESES column header (exact-age filter). */
+    .edad-header-btn {
+      font-size: 1rem !important;
+      vertical-align: -4px;
+      margin-left: 0.2rem;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      opacity: 0.5;
+      cursor: pointer;
+      transition: color 0.15s, opacity 0.15s;
+    }
+
+    .edad-header-btn:hover,
+    .edad-header-btn.active {
+      opacity: 1;
+      color: var(--success-text);
+    }
+
+    /* Column-header popover is positioned fixed (set by JS) so it isn't clipped
+       by the table's overflow; sits above the sticky header and totals row. */
+    .header-filter-popover {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 60;
+      min-width: 220px;
+    }
+
     .popover-head {
       display: flex;
       gap: 0.4rem;
@@ -1266,7 +1316,7 @@
         <div class="flex flex-col">
           <h1 class="font-bold text-base leading-none tracking-tight" id="appTitleText" style="color: var(--text-main)">Maestro de <span
               class="text-teal-400">Suertes</span></h1>
-          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.2.6</span>
+          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.2.7</span>
         </div>
       </div>
 
@@ -1506,6 +1556,19 @@
       </div>
     </div>
 
+    <!-- Column-header age filter (exact decimals). Anchored/positioned via JS
+         next to the "EDAD HOY MESES" header funnel button. Maestro view only. -->
+    <div id="edadHeaderPopover" class="filter-multi-popover header-filter-popover hidden"
+      role="group" aria-label="Filtrar por edad exacta">
+      <input type="search" id="edadExactSearch" class="popover-search" placeholder="Buscar edad..."
+        autocomplete="off" aria-label="Buscar edad" oninput="filterMultiOptions('edadExact', this.value)">
+      <div class="popover-head">
+        <button type="button" onclick="selectAllMulti('edadExact')">Seleccionar todas</button>
+        <button type="button" onclick="clearMulti('edadExact')">Ninguno</button>
+      </div>
+      <div class="popover-list" id="edadExactOptions"></div>
+    </div>
+
   </main>
 
   <!-- Bottom tab navigation -->
@@ -1588,7 +1651,7 @@
     // NOTE: `version` below MUST match service-worker.js (CACHE_VERSION),
     // index.html (APP_VERSION) and the <span id="appVersion"> text in the header.
     const CONFIG = {
-      version: 'v2.2.6',
+      version: 'v2.2.7',
       csvFile: 'maestro.csv',
       pageSize: 25
     };
@@ -1611,7 +1674,7 @@
         edadColumnIndex: -1,
         empresaColumnIndex: -1,
         modalRowIndex: -1,
-        multiFilters: { corte: new Set(), edad: new Set() },
+        multiFilters: { corte: new Set(), edad: new Set(), edadExact: new Set() },
         singleFilters: {},   // keyed by selectId
         searchValue: '',
         loaded: false
@@ -1639,7 +1702,10 @@
         multiConfig: {
           corte: { label: 'Corte', allLabel: 'Todos', match: h => normalizeHeader(h) === 'NUMERO DE CORTE' },
           // Maestro uses the calculated "EDAD HOY MESES" column (set by processor).
-          edad:  { label: 'Edad',  allLabel: 'Todas', useCalculated: true }
+          // Toolbar 'Edad' = integer ranges. headerExact:true also enables an
+          // Excel-style dropdown on the column header to pick exact (1-decimal)
+          // ages; both filters combine (intersection).
+          edad:  { label: 'Edad',  allLabel: 'Todas', useCalculated: true, headerExact: true }
         },
         // Totals row (tfoot) aggregated over ALL filtered rows. Declarative:
         // each metric targets a column by normalized header name. Computed by
@@ -2212,12 +2278,35 @@
           th.appendChild(label);
           th.appendChild(indicator);
           th.addEventListener('click', () => toggleSort(index));
+
+          // Excel-style exact-age filter funnel on the EDAD HOY MESES header
+          // (maestro only). Clicking it opens the decimal-age popover; it must
+          // not trigger the column sort.
+          if (index === STATE.edadColumnIndex &&
+              STATE.multiConfig && STATE.multiConfig.edad && STATE.multiConfig.edad.headerExact) {
+            const funnel = document.createElement('button');
+            funnel.type = 'button';
+            funnel.id = 'edadHeaderBtn';
+            funnel.className = 'edad-header-btn material-symbols-outlined';
+            funnel.textContent = 'filter_alt';
+            funnel.setAttribute('aria-label', 'Filtrar por edad');
+            funnel.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const pop = document.getElementById('edadHeaderPopover');
+              const isOpen = pop && !pop.classList.contains('hidden');
+              if (isOpen) closeAllMultiPopovers();
+              else openEdadHeaderPopover(funnel);
+            });
+            th.appendChild(funnel);
+          }
+
           tr.appendChild(th);
         });
         thead.appendChild(tr);
         // Sync sort indicators with stored sort state (e.g., when re-rendering
         // headers after a view switch that had a sort applied).
         updateSortIndicators();
+        updateEdadHeaderUi();
       }
 
       // Pagination
@@ -2513,9 +2602,16 @@
       const scroller = document.getElementById('tableScroll');
       if (!scroller) return;
       scroller.addEventListener('scroll', updateScrollFade, { passive: true });
+      // The header exact-age popover is fixed-positioned, so close it when the
+      // table scrolls (it would otherwise detach from its funnel button).
+      scroller.addEventListener('scroll', () => {
+        const pop = document.getElementById('edadHeaderPopover');
+        if (pop && !pop.classList.contains('hidden')) closeAllMultiPopovers();
+      }, { passive: true });
       window.addEventListener('resize', () => {
         updateScrollFade();
         updateStickyOffsets();
+        closeAllMultiPopovers();
       });
       requestAnimationFrame(updateScrollFade);
       requestAnimationFrame(updateStickyOffsets);
@@ -2524,7 +2620,23 @@
     // =======================
     // FILTROS / ORDEN / EXPORT
     // =======================
+    // Baseline rows for the active view BEFORE user filters. The Maestro view is
+    // scoped to the company chosen on the home screen (COMPANY); ZQM is never
+    // company-scoped. Used to populate filter options — so each company only sees
+    // its own values (e.g. its real maximum age) — and as the search baseline.
+    function getScopedRows() {
+      if (CURRENT_VIEW_KEY === 'maestro') {
+        if (!COMPANY.active) return [];
+        if (STATE.empresaColumnIndex !== -1) {
+          return STATE.rows.filter(r =>
+            COMPANY.set.has((r[STATE.empresaColumnIndex] || '').trim().toUpperCase()));
+        }
+      }
+      return STATE.rows;
+    }
+
     function populateFilters() {
+      const scoped = getScopedRows();
       STATE.filterConfig.forEach(col => {
         // match receives raw header; match fn normalizes internally.
         const idx = STATE.headers.findIndex(h => col.match(h));
@@ -2542,7 +2654,7 @@
         select.style.display = '';
 
         const values = [...new Set(
-          STATE.rows
+          scoped
             .map(r => (r[idx] || '').trim())
             .filter(v => v !== '' && !ERROR_VALUES.has(v.toUpperCase()))
         )].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
@@ -2562,6 +2674,7 @@
     }
 
     function populateMultiFilters() {
+      const scoped = getScopedRows();
       // Corte: integer values; column name per view config.
       const cfgC = STATE.multiConfig.corte;
       const corteIdx = cfgC && cfgC.match ? STATE.headers.findIndex(cfgC.match) : -1;
@@ -2572,7 +2685,7 @@
       } else {
         if (corteContainer) corteContainer.style.display = '';
         const values = [...new Set(
-          STATE.rows.map(r => {
+          scoped.map(r => {
             const v = String(r[corteIdx] || '').trim();
             const n = parseInt(v, 10);
             return isNaN(n) ? null : n;
@@ -2598,8 +2711,11 @@
         if (edadContainer) edadContainer.style.display = 'none';
       } else {
         if (edadContainer) edadContainer.style.display = '';
+        // Toolbar "Edad": group by floor(value) into "x–x+1 meses". Only floors
+        // present in the scoped (company) rows are listed, so the ranges stop at
+        // that company's real maximum age.
         const buckets = [...new Set(
-          STATE.rows.map(r => {
+          scoped.map(r => {
             const v = parseFloat(String(r[edadIdx] || '').replace(',', '.'));
             return isNaN(v) ? null : Math.floor(v);
           }).filter(n => n !== null)
@@ -2609,6 +2725,31 @@
           label: `${v}–${v + 1} meses`
         })));
       }
+
+      // Column-header "exact age" filter (maestro only, when headerExact is set).
+      populateEdadExact(cfgE && cfgE.headerExact ? edadIdx : -1);
+    }
+
+    // Populate the exact-age (decimal) options for the column-header filter.
+    // One option per distinct value (canonical 1-decimal), sorted ascending;
+    // the list therefore ends at the real maximum age present. Pass idx = -1
+    // (e.g. ZQM) to disable: clears the options and any current selection.
+    function populateEdadExact(edadIdx) {
+      const container = document.getElementById('edadExactOptions');
+      if (!container) return;
+      if (edadIdx === -1) {
+        container.innerHTML = '';
+        if (STATE.multiFilters.edadExact) STATE.multiFilters.edadExact.clear();
+        updateEdadHeaderUi();
+        return;
+      }
+      const values = [...new Set(
+        getScopedRows().map(r => {
+          const v = parseFloat(String(r[edadIdx] || '').replace(',', '.'));
+          return isNaN(v) ? null : v.toFixed(1);
+        }).filter(v => v !== null)
+      )].sort((a, b) => parseFloat(a) - parseFloat(b));
+      renderMultiOptions('edadExact', values.map(v => ({ value: v, label: `${v} meses` })));
     }
 
     function renderMultiOptions(key, options) {
@@ -2623,10 +2764,11 @@
         input.type = 'checkbox';
         input.value = String(opt.value);
         input.dataset.multi = key;
-        // Preserve selection when repopulating (e.g., after view switch)
-        input.checked = STATE.multiFilters[key].has(opt.value);
+        // Values are stored as strings so decimal ages (e.g. "9.3") survive.
+        // Preserve selection when repopulating (e.g., after view switch).
+        input.checked = STATE.multiFilters[key].has(String(opt.value));
         input.addEventListener('change', (e) => {
-          const v = parseInt(e.target.value, 10);
+          const v = e.target.value;
           if (e.target.checked) STATE.multiFilters[key].add(v);
           else STATE.multiFilters[key].delete(v);
           updateMultiLabel(key);
@@ -2644,6 +2786,9 @@
     }
 
     function updateMultiLabel(key) {
+      // The header exact-age filter isn't a toolbar .filter-multi; it shows its
+      // active state on the column-header funnel instead.
+      if (key === 'edadExact') { updateEdadHeaderUi(); return; }
       const container = document.querySelector(`.filter-multi[data-key="${key}"]`);
       if (!container) return;
       const countEl = container.querySelector('.filter-multi-count');
@@ -2672,6 +2817,9 @@
       if (!isOpen) {
         popover.classList.remove('hidden');
         trigger.setAttribute('aria-expanded', 'true');
+        // Reset the search box (if any) so all options are visible on open.
+        const search = popover.querySelector('.popover-search');
+        if (search) { search.value = ''; filterMultiOptions(key, ''); }
       }
     }
 
@@ -2680,12 +2828,52 @@
       document.querySelectorAll('.filter-multi-trigger').forEach(t => t.setAttribute('aria-expanded', 'false'));
     }
 
+    // Open the column-header exact-age popover, positioned (fixed) under the
+    // funnel button so it escapes the table's overflow clipping.
+    function openEdadHeaderPopover(btn) {
+      const pop = document.getElementById('edadHeaderPopover');
+      if (!pop || !btn) return;
+      closeAllMultiPopovers();
+      const search = pop.querySelector('.popover-search');
+      if (search) { search.value = ''; filterMultiOptions('edadExact', ''); }
+      pop.classList.remove('hidden');
+      // Position below the button, kept within the viewport.
+      const r = btn.getBoundingClientRect();
+      const popW = pop.offsetWidth || 240;
+      const left = Math.max(8, Math.min(r.left, window.innerWidth - popW - 8));
+      pop.style.left = `${left}px`;
+      pop.style.top = `${Math.round(r.bottom + 4)}px`;
+    }
+
+    // Reflect the exact-age selection on the header funnel (active highlight).
+    function updateEdadHeaderUi() {
+      const size = STATE.multiFilters.edadExact ? STATE.multiFilters.edadExact.size : 0;
+      const btn = document.getElementById('edadHeaderBtn');
+      if (!btn) return;
+      btn.classList.toggle('active', size > 0);
+      btn.setAttribute('aria-label', size > 0
+        ? `Filtrar por edad (${size} seleccionadas)`
+        : 'Filtrar por edad');
+    }
+
+    // Filter the visible options inside a multi-select popover by text (search box).
+    // Only affects what's shown; it does not change the current selection.
+    function filterMultiOptions(key, term) {
+      const t = (term || '').trim().toLowerCase();
+      const container = document.getElementById(`${key}Options`);
+      if (!container) return;
+      container.querySelectorAll('.popover-option').forEach(opt => {
+        const txt = (opt.textContent || '').toLowerCase();
+        opt.style.display = (!t || txt.includes(t)) ? '' : 'none';
+      });
+    }
+
     function selectAllMulti(key) {
       const options = document.querySelectorAll(`#${key}Options input[type="checkbox"]`);
       STATE.multiFilters[key].clear();
       options.forEach(cb => {
         cb.checked = true;
-        STATE.multiFilters[key].add(parseInt(cb.value, 10));
+        STATE.multiFilters[key].add(cb.value);
       });
       updateMultiLabel(key);
       applyFiltersAndSort();
@@ -2699,26 +2887,23 @@
       applyFiltersAndSort();
     }
 
-    // Close any open multi-filter popover when clicking outside
+    // Close any open multi-filter popover when clicking outside. The header
+    // exact-age popover lives outside the toolbar, so allow clicks inside it
+    // (and on its funnel button) without closing.
     document.addEventListener('click', (e) => {
-      if (!e.target.closest('.filter-multi')) closeAllMultiPopovers();
+      if (!e.target.closest('.filter-multi') &&
+          !e.target.closest('#edadHeaderPopover') &&
+          !e.target.closest('#edadHeaderBtn')) {
+        closeAllMultiPopovers();
+      }
     });
 
     function applyFiltersAndSort() {
       const term = (document.getElementById('searchInput').value || '').toLowerCase();
 
-      let rows = STATE.rows;
-
-      // Baseline company scope (Maestro view only). Locked by the ?empresa= URL param
-      // set on the home screen. No param → no rows (user must pick a company).
-      if (CURRENT_VIEW_KEY === 'maestro') {
-        if (!COMPANY.active) {
-          rows = [];
-        } else if (STATE.empresaColumnIndex !== -1) {
-          const empIdx = STATE.empresaColumnIndex;
-          rows = rows.filter(r => COMPANY.set.has((r[empIdx] || '').trim().toUpperCase()));
-        }
-      }
+      // Baseline company scope (Maestro locked to the ?empresa= company; ZQM = all).
+      // Same scope used to build the filter options, so they always match.
+      let rows = getScopedRows();
 
       // Baseline count for the active scope (company-filtered), used by the results
       // counter so "X de Y" reflects the chosen company, not the whole dataset.
@@ -2734,22 +2919,33 @@
         rows = rows.filter(r => (r[col.index] || '').trim() === value);
       });
 
-      // Multi-filter: Número de corte (integer values)
+      // Multi-filter: Número de corte (integer values, stored as strings)
       if (STATE.corteColumnIndex !== -1 && STATE.multiFilters.corte.size > 0) {
         const idx = STATE.corteColumnIndex;
         rows = rows.filter(r => {
           const n = parseInt(String(r[idx] || '').trim(), 10);
-          return !isNaN(n) && STATE.multiFilters.corte.has(n);
+          return !isNaN(n) && STATE.multiFilters.corte.has(String(n));
         });
       }
 
-      // Multi-filter: Edad (floor(value) buckets)
+      // Multi-filter: Edad (toolbar) — floor(value) buckets.
       if (STATE.edadColumnIndex !== -1 && STATE.multiFilters.edad.size > 0) {
         const idx = STATE.edadColumnIndex;
         rows = rows.filter(r => {
           const v = parseFloat(String(r[idx] || '').replace(',', '.'));
           if (isNaN(v)) return false;
-          return STATE.multiFilters.edad.has(Math.floor(v));
+          return STATE.multiFilters.edad.has(String(Math.floor(v)));
+        });
+      }
+
+      // Multi-filter: Edad exacta (column-header) — exact 1-decimal match.
+      // Combines with the range filter above (intersection).
+      if (STATE.edadColumnIndex !== -1 && STATE.multiFilters.edadExact && STATE.multiFilters.edadExact.size > 0) {
+        const idx = STATE.edadColumnIndex;
+        rows = rows.filter(r => {
+          const v = parseFloat(String(r[idx] || '').replace(',', '.'));
+          if (isNaN(v)) return false;
+          return STATE.multiFilters.edadExact.has(v.toFixed(1));
         });
       }
 
@@ -3256,6 +3452,9 @@
       }
 
       if (e.key === 'Escape') {
+        // First, close any open filter popover (toolbar or column header).
+        const openPop = document.querySelector('.filter-multi-popover:not(.hidden)');
+        if (openPop) { e.preventDefault(); closeAllMultiPopovers(); return; }
         const input = document.getElementById('searchInput');
         if (input.value) {
           input.value = '';

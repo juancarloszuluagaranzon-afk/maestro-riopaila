@@ -1,6 +1,6 @@
 // Version constant. MUST match index.html (APP_VERSION, visible "v..." text)
 // and maestro.html (CONFIG.version, #appVersion span). Bump all four on release.
-const CACHE_VERSION = 'v2.2.6'; // Empresa como chip compacto en la fila de resultados
+const CACHE_VERSION = 'v2.2.7'; // Filtro de edad por cabecera (decimales) y opciones por empresa
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
