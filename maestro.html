@@ -477,7 +477,8 @@
       box-sizing: border-box;
       margin-bottom: 0.4rem;
       padding: 0.4rem 0.6rem;
-      font-size: 0.78rem;
+      /* 16px min prevents iOS from auto-zooming (and shifting the popover) on focus */
+      font-size: 16px;
       color: var(--input-text);
       background: var(--input-bg);
       border: 1px solid var(--glass-border);
@@ -1320,7 +1321,7 @@
         <div class="flex flex-col">
           <h1 class="font-bold text-base leading-none tracking-tight" id="appTitleText" style="color: var(--text-main)">Maestro de <span
               class="text-teal-400">Suertes</span></h1>
-          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.2.9</span>
+          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.3.0</span>
         </div>
       </div>
 
@@ -1656,7 +1657,7 @@
     // NOTE: `version` below MUST match service-worker.js (CACHE_VERSION),
     // index.html (APP_VERSION) and the <span id="appVersion"> text in the header.
     const CONFIG = {
-      version: 'v2.2.9',
+      version: 'v2.3.0',
       csvFile: 'maestro.csv',
       pageSize: 25
     };
@@ -2606,16 +2607,17 @@
       const scroller = document.getElementById('tableScroll');
       if (!scroller) return;
       scroller.addEventListener('scroll', updateScrollFade, { passive: true });
-      // The column-header popover is fixed-positioned, so close it when the
-      // table scrolls (it would otherwise detach from its funnel button).
-      scroller.addEventListener('scroll', () => {
-        const pop = document.getElementById('headerFilterPopover');
-        if (pop && !pop.classList.contains('hidden')) closeAllMultiPopovers();
-      }, { passive: true });
+      // The column-header popover is fixed-positioned, so keep it pinned to its
+      // funnel as the table scrolls. We reposition instead of closing because on
+      // mobile, tapping the search box opens the soft keyboard, which reflows the
+      // viewport and fires a spurious scroll event — closing here would dismiss
+      // the popover before you could type. We only close if the funnel scrolls
+      // out of the table's horizontal viewport (and never while typing in it).
+      scroller.addEventListener('scroll', reflowHeaderPopover, { passive: true });
       window.addEventListener('resize', () => {
         updateScrollFade();
         updateStickyOffsets();
-        closeAllMultiPopovers();
+        reflowHeaderPopover();
       });
       requestAnimationFrame(updateScrollFade);
       requestAnimationFrame(updateStickyOffsets);
@@ -2931,6 +2933,24 @@
       if (top + popH > window.innerHeight - 8) top = Math.max(8, r.top - popH - 4);
       pop.style.left = `${Math.round(left)}px`;
       pop.style.top = `${Math.round(top)}px`;
+    }
+
+    // Keep the open (fixed) column-header popover pinned to its funnel on scroll /
+    // resize — or close it if the funnel scrolled out of the table's horizontal
+    // viewport. It never closes while its search box is focused: on mobile the soft
+    // keyboard fires spurious scroll/resize events that would otherwise dismiss the
+    // popover the instant you tapped "Buscar", before you could type.
+    function reflowHeaderPopover() {
+      const pop = document.getElementById('headerFilterPopover');
+      if (!pop || pop.classList.contains('hidden')) return;
+      const scroller = document.getElementById('tableScroll');
+      const funnel = document.querySelector(`.col-filter-btn[data-col="${CURRENT_HEADER_COL}"]`);
+      if (!funnel || !scroller) { closeAllMultiPopovers(); return; }
+      const fr = funnel.getBoundingClientRect();
+      const sr = scroller.getBoundingClientRect();
+      const funnelVisible = fr.right >= sr.left && fr.left <= sr.right;
+      if (funnelVisible || pop.contains(document.activeElement)) positionHeaderPopover(pop, funnel);
+      else closeAllMultiPopovers();
     }
 
     // Filter the visible options inside a multi-select popover by text (search box).
