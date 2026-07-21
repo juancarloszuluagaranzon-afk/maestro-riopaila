@@ -1,6 +1,6 @@
 // Version constant. MUST match index.html (APP_VERSION, visible "v..." text)
 // and maestro.html (CONFIG.version, #appVersion span). Bump all four on release.
-const CACHE_VERSION = 'v2.3.0'; // Fix: buscador de filtros de cabecera usable en movil (no se cierra al abrir el teclado)
+const CACHE_VERSION = 'v2.3.1'; // Fix: zqm.csv a UTF-8 con ';' + deteccion de separador (tab) y codificacion ANSI
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 

@@ -1321,7 +1321,7 @@
         <div class="flex flex-col">
           <h1 class="font-bold text-base leading-none tracking-tight" id="appTitleText" style="color: var(--text-main)">Maestro de <span
               class="text-teal-400">Suertes</span></h1>
-          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.3.0</span>
+          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.3.1</span>
         </div>
       </div>
 
@@ -1657,7 +1657,7 @@
     // NOTE: `version` below MUST match service-worker.js (CACHE_VERSION),
     // index.html (APP_VERSION) and the <span id="appVersion"> text in the header.
     const CONFIG = {
-      version: 'v2.3.0',
+      version: 'v2.3.1',
       csvFile: 'maestro.csv',
       pageSize: 25
     };
@@ -1805,6 +1805,18 @@
       return (h || '').toString().toUpperCase().replace(/\s+/g, ' ').trim();
     }
 
+    // Read a CSV response as text. response.text() always assumes UTF-8, but Excel
+    // often exports ANSI (windows-1252) — those bytes decode to replacement chars,
+    // turning "AÑO" into "A<?>O". Try strict UTF-8 first, fall back to windows-1252.
+    async function readCsvResponse(response) {
+      const buf = await response.arrayBuffer();
+      try {
+        return new TextDecoder('utf-8', { fatal: true }).decode(buf);
+      } catch (e) {
+        return new TextDecoder('windows-1252').decode(buf);
+      }
+    }
+
     // RFC 4180-ish CSV parser: respects double-quoted fields, escaped "" inside quotes,
     // and embedded newlines in quoted cells. Skips fully-empty lines. Strips a leading
     // UTF-8 BOM if present.
@@ -1917,7 +1929,7 @@
       try {
         const response = await fetch(STATE.csvFile);
         if (!response.ok) throw new Error(`Error ${response.status}`);
-        const text = await response.text();
+        const text = await readCsvResponse(response);
         processData(text);
         STATE.loaded = true;
       } catch (error) {
@@ -1946,14 +1958,25 @@
     function processData(csvText) {
       if (!csvText.trim()) return showError('Datos Vacíos', `El archivo ${STATE.csvFile} está vacío.`);
 
-      // Detect separator from the first physical line. Headers rarely contain quotes,
-      // so this heuristic is safe in practice.
+      // Detect separator from the first physical line by picking whichever
+      // candidate occurs most. Excel exports vary: ';' en configuración es-CO,
+      // pero "Texto delimitado por tabulaciones" produce '\t'. Ties favour ';'.
+      // Headers rarely contain quotes, so this heuristic is safe in practice.
       const firstLineEnd = csvText.search(/\r?\n/);
       const firstLine = firstLineEnd === -1 ? csvText : csvText.slice(0, firstLineEnd);
-      const separator = firstLine.includes(';') ? ';' : ',';
+      const separator = [';', '\t', ',']
+        .map(s => ({ s, n: firstLine.split(s).length - 1 }))
+        .reduce((best, c) => (c.n > best.n ? c : best)).s;
 
       const allRows = parseCsvText(csvText, separator);
       if (allRows.length < 2) return showError('Formato Inválido', 'El archivo no tiene cabeceras o datos.');
+
+      // A single-column header means no known separator matched: the file would
+      // otherwise render as one garbage column with no warning at all.
+      if (allRows[0].length < 2) {
+        return showError('Formato Inválido',
+          `No se reconoció el separador de columnas de ${STATE.csvFile}. Guárdalo como CSV delimitado por ";" en UTF-8.`);
+      }
 
       STATE.headers = allRows[0].map(h => h.trim());
 
@@ -2539,7 +2562,7 @@
         try {
           const response = await fetch(STATE.csvFile);
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const text = await response.text();
+          const text = await readCsvResponse(response);
           // Abort if the user switched away while we were loading.
           if (CURRENT_VIEW_KEY !== targetKey) return;
           processData(text);  // processData calls populateFilters + applyFiltersAndSort
