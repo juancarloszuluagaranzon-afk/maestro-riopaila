@@ -1065,6 +1065,45 @@
       letter-spacing: 0.3px;
     }
 
+    /* Enlace de ubicación (tabla) y botón "Ver en Rio Map" (detalle). */
+    .riomap-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #14b8a6;
+      font-weight: 600;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+    .riomap-link:hover { color: #2dd4bf; text-decoration: underline; }
+
+    .riomap-action { margin: 0.75rem 0 0.25rem; }
+    .riomap-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 0.7rem 1rem;
+      border-radius: 0.75rem;
+      background: linear-gradient(90deg, #0d9488, #059669);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-decoration: none;
+      box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+      transition: filter 0.15s ease, transform 0.15s ease;
+    }
+    .riomap-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .riomap-btn .material-symbols-outlined { font-size: 20px; }
+    .riomap-btn-off {
+      background: var(--glass-border);
+      color: var(--text-muted);
+      box-shadow: none;
+      cursor: default;
+    }
+    .riomap-btn-off:hover { filter: none; transform: none; }
+
     .detail-list .detail-row {
       display: flex;
       justify-content: space-between;
@@ -1321,7 +1360,7 @@
         <div class="flex flex-col">
           <h1 class="font-bold text-base leading-none tracking-tight" id="appTitleText" style="color: var(--text-main)">Maestro de <span
               class="text-teal-400">Suertes</span></h1>
-          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.3.1</span>
+          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.3.2</span>
         </div>
       </div>
 
@@ -1657,10 +1696,46 @@
     // NOTE: `version` below MUST match service-worker.js (CACHE_VERSION),
     // index.html (APP_VERSION) and the <span id="appVersion"> text in the header.
     const CONFIG = {
-      version: 'v2.3.1',
+      version: 'v2.3.2',
       csvFile: 'maestro.csv',
       pageSize: 25
     };
+
+    // =======================
+    // UBICACIÓN EN RIO MAP (deep-link)
+    // =======================
+    // La columna COORDENADAS ("lat,lon") de maestro.csv se convierte en un enlace
+    // que abre Rio Map en el punto de la suerte (misma app de campo). La empresa
+    // define la planta/cartografía: RIOP → riopaila; CAST/CAUC → castilla.
+    const RIOMAP_BASE = 'https://riomap.vercel.app';
+    function plantaDeEmpresa(emp) {
+      return String(emp || '').trim().toUpperCase() === 'RIOP' ? 'riopaila' : 'castilla';
+    }
+    function parseCoord(v) {
+      const m = String(v == null ? '' : v).match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+      if (!m) return null;
+      const lat = Number(m[1]), lon = Number(m[2]);
+      if (!isFinite(lat) || !isFinite(lon)) return null;
+      return { lat, lon };
+    }
+    function rioMapUrl(coord, empresa, suerte) {
+      const q = new URLSearchParams({
+        p: plantaDeEmpresa(empresa),
+        lat: coord.lat.toFixed(6),
+        lon: coord.lon.toFixed(6),
+        n: 'Suerte ' + String(suerte == null ? '' : suerte).trim()
+      });
+      return RIOMAP_BASE + '/mapa?' + q.toString();
+    }
+    // Índices (por vista) de las columnas que alimentan el enlace de ubicación.
+    function coordCols() {
+      const H = STATE.headers || [];
+      return {
+        coord: H.findIndex(h => normalizeHeader(h) === 'COORDENADAS'),
+        suerte: H.findIndex(h => normalizeHeader(h) === 'SUERTE'),
+        empresa: H.findIndex(h => normalizeHeader(h) === 'EMPRESA')
+      };
+    }
 
     // =======================
     // VIEWS (Maestro / ZQM)
@@ -2341,6 +2416,7 @@
       const start = (STATE.currentPage - 1) * CONFIG.pageSize;
       const pageData = STATE.filteredRows.slice(start, start + CONFIG.pageSize);
 
+      const CC = coordCols();
       const fragment = document.createDocumentFragment();
       pageData.forEach((row, i) => {
         const filteredIdx = start + i;
@@ -2365,6 +2441,26 @@
             td.style.color = "var(--success-text)";
             td.style.fontWeight = "bold";
             td.style.backgroundColor = "var(--success-bg)";
+          }
+
+          // Columna COORDENADAS: enlace 📍 a Rio Map (no texto crudo). Si no hay
+          // coordenada, cae al render genérico (celda vacía). El clic no abre el
+          // detalle de la fila (stopPropagation).
+          if (index === CC.coord && CC.coord !== -1) {
+            const coord = parseCoord(cell);
+            if (coord) {
+              const a = document.createElement('a');
+              a.href = rioMapUrl(coord, CC.empresa !== -1 ? row[CC.empresa] : '', CC.suerte !== -1 ? row[CC.suerte] : '');
+              a.target = '_blank';
+              a.rel = 'noopener';
+              a.className = 'riomap-link';
+              a.title = `Abrir en Rio Map (${coord.lat.toFixed(6)}, ${coord.lon.toFixed(6)})`;
+              a.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px">location_on</span> Ubicación';
+              a.addEventListener('click', (e) => e.stopPropagation());
+              td.appendChild(a);
+              tr.appendChild(td);
+              return;
+            }
           }
 
           const sanitized = sanitizeCell(cell);
@@ -3491,6 +3587,15 @@
       const finca  = getFirst('FINCA');
       const zona   = getFirst('ZONA');
 
+      // Acción de ubicación: botón que abre Rio Map en el punto de la suerte.
+      const CC = coordCols();
+      const coord = CC.coord !== -1 ? parseCoord(row[CC.coord]) : null;
+      const empresa = CC.empresa !== -1 ? row[CC.empresa] : '';
+      const actionHtml = coord
+        ? `<a class="riomap-btn" href="${escapeHtml(rioMapUrl(coord, empresa, suerte))}" target="_blank" rel="noopener">`
+          + `<span class="material-symbols-outlined">location_on</span> Ver en Rio Map</a>`
+        : `<div class="riomap-btn riomap-btn-off"><span class="material-symbols-outlined">location_off</span> Sin coordenada</div>`;
+
       // One row per column: label + value
       let rowsHtml = '';
       headers.forEach((header, i) => {
@@ -3510,6 +3615,7 @@
           <div class="detail-id-suerte">${escapeHtml(suerte)}</div>
           <div class="detail-id-sub">${escapeHtml(finca)} · Zona ${escapeHtml(zona)}</div>
         </div>
+        <div class="riomap-action">${actionHtml}</div>
         <div class="detail-list">${rowsHtml}</div>
       `;
     }
