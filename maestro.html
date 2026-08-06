@@ -1104,6 +1104,21 @@
     }
     .riomap-btn-off:hover { filter: none; transform: none; }
 
+    /* Ubicación aproximada (centroide del sector): ámbar, para distinguirla. */
+    .riomap-link.riomap-aprox { color: #f59e0b; }
+    .riomap-link.riomap-aprox:hover { color: #fbbf24; }
+    .riomap-btn-aprox {
+      background: linear-gradient(90deg, #d97706, #b45309);
+      box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
+    }
+    .riomap-note {
+      margin-top: 0.4rem;
+      font-size: 0.72rem;
+      line-height: 1.3;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
     .detail-list .detail-row {
       display: flex;
       justify-content: space-between;
@@ -1360,7 +1375,7 @@
         <div class="flex flex-col">
           <h1 class="font-bold text-base leading-none tracking-tight" id="appTitleText" style="color: var(--text-main)">Maestro de <span
               class="text-teal-400">Suertes</span></h1>
-          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.3.2</span>
+          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.3.3</span>
         </div>
       </div>
 
@@ -1696,7 +1711,7 @@
     // NOTE: `version` below MUST match service-worker.js (CACHE_VERSION),
     // index.html (APP_VERSION) and the <span id="appVersion"> text in the header.
     const CONFIG = {
-      version: 'v2.3.2',
+      version: 'v2.3.3',
       csvFile: 'maestro.csv',
       pageSize: 25
     };
@@ -1704,26 +1719,30 @@
     // =======================
     // UBICACIÓN EN RIO MAP (deep-link)
     // =======================
-    // La columna COORDENADAS ("lat,lon") de maestro.csv se convierte en un enlace
-    // que abre Rio Map en el punto de la suerte (misma app de campo). La empresa
-    // define la planta/cartografía: RIOP → riopaila; CAST/CAUC → castilla.
+    // La columna COORDENADAS de maestro.csv se convierte en un enlace que abre
+    // Rio Map en el punto de la suerte (misma app de campo). La empresa define la
+    // planta/cartografía: RIOP → riopaila; CAST/CAUC → castilla.
+    // Formato de la celda: "lat,lon" (exacta, del polígono) o "~lat,lon"
+    // (aproximada = centroide del sector, cuando la suerte aún no tiene geometría).
     const RIOMAP_BASE = 'https://riomap.vercel.app';
     function plantaDeEmpresa(emp) {
       return String(emp || '').trim().toUpperCase() === 'RIOP' ? 'riopaila' : 'castilla';
     }
     function parseCoord(v) {
-      const m = String(v == null ? '' : v).match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+      const raw = String(v == null ? '' : v).trim();
+      const aprox = raw.startsWith('~');
+      const m = (aprox ? raw.slice(1) : raw).match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
       if (!m) return null;
       const lat = Number(m[1]), lon = Number(m[2]);
       if (!isFinite(lat) || !isFinite(lon)) return null;
-      return { lat, lon };
+      return { lat, lon, aprox };
     }
     function rioMapUrl(coord, empresa, suerte) {
       const q = new URLSearchParams({
         p: plantaDeEmpresa(empresa),
         lat: coord.lat.toFixed(6),
         lon: coord.lon.toFixed(6),
-        n: 'Suerte ' + String(suerte == null ? '' : suerte).trim()
+        n: 'Suerte ' + String(suerte == null ? '' : suerte).trim() + (coord.aprox ? ' (aprox.)' : '')
       });
       return RIOMAP_BASE + '/mapa?' + q.toString();
     }
@@ -2453,9 +2472,13 @@
               a.href = rioMapUrl(coord, CC.empresa !== -1 ? row[CC.empresa] : '', CC.suerte !== -1 ? row[CC.suerte] : '');
               a.target = '_blank';
               a.rel = 'noopener';
-              a.className = 'riomap-link';
-              a.title = `Abrir en Rio Map (${coord.lat.toFixed(6)}, ${coord.lon.toFixed(6)})`;
-              a.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px">location_on</span> Ubicación';
+              a.className = 'riomap-link' + (coord.aprox ? ' riomap-aprox' : '');
+              a.title = coord.aprox
+                ? `Ubicación aproximada del sector (${coord.lat.toFixed(6)}, ${coord.lon.toFixed(6)})`
+                : `Abrir en Rio Map (${coord.lat.toFixed(6)}, ${coord.lon.toFixed(6)})`;
+              a.innerHTML = coord.aprox
+                ? '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px">near_me</span> Aprox.'
+                : '<span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px">location_on</span> Ubicación';
               a.addEventListener('click', (e) => e.stopPropagation());
               td.appendChild(a);
               tr.appendChild(td);
@@ -3591,10 +3614,17 @@
       const CC = coordCols();
       const coord = CC.coord !== -1 ? parseCoord(row[CC.coord]) : null;
       const empresa = CC.empresa !== -1 ? row[CC.empresa] : '';
-      const actionHtml = coord
-        ? `<a class="riomap-btn" href="${escapeHtml(rioMapUrl(coord, empresa, suerte))}" target="_blank" rel="noopener">`
-          + `<span class="material-symbols-outlined">location_on</span> Ver en Rio Map</a>`
-        : `<div class="riomap-btn riomap-btn-off"><span class="material-symbols-outlined">location_off</span> Sin coordenada</div>`;
+      let actionHtml;
+      if (coord) {
+        const cls = 'riomap-btn' + (coord.aprox ? ' riomap-btn-aprox' : '');
+        const icon = coord.aprox ? 'near_me' : 'location_on';
+        const label = coord.aprox ? 'Ver en Rio Map (aprox.)' : 'Ver en Rio Map';
+        actionHtml = `<a class="${cls}" href="${escapeHtml(rioMapUrl(coord, empresa, suerte))}" target="_blank" rel="noopener">`
+          + `<span class="material-symbols-outlined">${icon}</span> ${label}</a>`
+          + (coord.aprox ? `<div class="riomap-note">Ubicación aproximada (centroide del sector), no del polígono exacto de la suerte.</div>` : '');
+      } else {
+        actionHtml = `<div class="riomap-btn riomap-btn-off"><span class="material-symbols-outlined">location_off</span> Sin coordenada</div>`;
+      }
 
       // One row per column: label + value
       let rowsHtml = '';

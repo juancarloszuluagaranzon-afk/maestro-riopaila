@@ -1,6 +1,6 @@
 // Version constant. MUST match index.html (APP_VERSION, visible "v..." text)
 // and maestro.html (CONFIG.version, #appVersion span). Bump all four on release.
-const CACHE_VERSION = 'v2.3.2'; // Columna COORDENADAS + enlace de ubicacion a Rio Map (deep-link) en tabla y detalle
+const CACHE_VERSION = 'v2.3.3'; // Completadas las 73 suertes: 5 exactas nuevas + 68 aproximadas (~ centroide de sector, marcadas)
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 const BASE = '/';
 
