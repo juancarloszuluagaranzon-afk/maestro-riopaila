@@ -6,12 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="manifest" href="manifest.json">
   <title>Riopaila Agrícola</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link href="https://fonts.googleapis.com" rel="preconnect">
-  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+  <!-- Todo desde el propio origen: esta app se abre en lote, sin señal. Nada de CDN.
+       Ver "Nada de recursos externos" en CLAUDE.md antes de agregar un <script src="http...">. -->
+  <script src="vendor/tailwind.js"></script>
+  <link href="vendor/fonts.css" rel="stylesheet">
   <style>
     :root {
       --font-manrope: 'Manrope', sans-serif;
@@ -282,7 +280,7 @@
 
     <!-- App Version -->
     <div class="mt-12 text-slate-600 font-mono text-xs animate-float-in animate-delay-300">
-      v2.3.2 • 2026 Edition
+      v2.4.0 • 2026 Edition
     </div>
 
   </main>
@@ -314,7 +312,7 @@
     // ==============================
     // Version constant. MUST match service-worker.js (CACHE_VERSION),
     // maestro.html (CONFIG.version, #appVersion span) and the "v..." text at the bottom.
-    const APP_VERSION = 'v2.3.2';
+    const APP_VERSION = 'v2.4.0';
     const CACHE_NAME = `riopaila-maestro-${APP_VERSION}`;
     let deferredPrompt = null;
 

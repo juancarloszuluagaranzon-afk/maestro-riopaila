@@ -8,12 +8,10 @@
   <meta name="description" content="Maestro de Suertes - Riopaila Agrícola">
   <link rel="manifest" href="manifest.json">
   <title>Riopaila Agrícola – Maestro</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link href="https://fonts.googleapis.com" rel="preconnect">
-  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+  <!-- Todo desde el propio origen: esta app se abre en lote, sin señal. Nada de CDN.
+       Ver "Nada de recursos externos" en CLAUDE.md antes de agregar un <script src="http...">. -->
+  <script src="vendor/tailwind.js"></script>
+  <link href="vendor/fonts.css" rel="stylesheet">
   <style>
     :root {
       --font-manrope: 'Manrope', sans-serif;
@@ -1360,7 +1358,7 @@
         <div class="flex flex-col">
           <h1 class="font-bold text-base leading-none tracking-tight" id="appTitleText" style="color: var(--text-main)">Maestro de <span
               class="text-teal-400">Suertes</span></h1>
-          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.3.2</span>
+          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.4.0</span>
         </div>
       </div>
 
@@ -1696,7 +1694,7 @@
     // NOTE: `version` below MUST match service-worker.js (CACHE_VERSION),
     // index.html (APP_VERSION) and the <span id="appVersion"> text in the header.
     const CONFIG = {
-      version: 'v2.3.2',
+      version: 'v2.4.0',
       csvFile: 'maestro.csv',
       pageSize: 25
     };
