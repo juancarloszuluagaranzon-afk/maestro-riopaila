@@ -28,6 +28,32 @@ Sin build, sin dependencias, sin `package.json`. Todo es HTML/CSS/JS plano servi
 Los CSV se actualizan subiéndolos al repo (históricamente vía "Add files via upload"
 desde la web de GitHub). No hay backend ni base de datos.
 
+**Al subir un `maestro.csv` nuevo, actualiza también `CONFIG.dataUpdated` y
+`CONFIG.dataUpdatedShort`** en `maestro.html`: es la fecha de los datos que se muestra
+en el encabezado, junto a la versión. No la confundas con la versión de la app — una
+cambia cuando el ingenio manda datos, la otra cuando cambia el código.
+
+Las exportaciones traen a veces fechas como **número de serie de Excel** (`46260` en vez
+de `26/08/2026`), mezcladas con fechas normales en la misma columna. No hay que
+convertirlas: `parseDate` y `formatDateDisplay` ya las interpretan.
+
+**Quita las filas con `EMPRESA = BENG`.** Son cultivos de frutales, no caña, y no
+pertenecen a este maestro. La exportación del ingenio las incluye, así que hay que
+filtrarlas en cada actualización:
+
+```bash
+python -c "
+import io
+ls=io.open('maestro.csv',encoding='utf-8-sig',newline='').read().split('\r\n')
+i=ls[0].split(';').index('EMPRESA')
+out=[ls[0]]+[l for l in ls[1:] if l.strip() and l.split(';')[i].strip()!='BENG']
+io.open('maestro.csv','w',encoding='utf-8',newline='').write('﻿'+'\r\n'.join(out)+'\r\n')
+print(len(out)-1,'filas')"
+```
+
+Las únicas empresas válidas son `RIOP`, `CAST` y `CAUC`. Si aparece otra, no la verá
+nadie: la portada solo abre `?empresa=RIOP` y `?empresa=CAST,CAUC`.
+
 ### Dos vistas en una sola UI
 
 `maestro.html` define `VIEWS = { maestro, zqm }`. Cada vista tiene su propio objeto de

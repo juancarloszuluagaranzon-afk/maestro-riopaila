@@ -1358,7 +1358,12 @@
         <div class="flex flex-col">
           <h1 class="font-bold text-base leading-none tracking-tight" id="appTitleText" style="color: var(--text-main)">Maestro de <span
               class="text-teal-400">Suertes</span></h1>
-          <span class="text-[10px] text-slate-400 font-mono tracking-wide" id="appVersion">v2.4.0</span>
+          <div class="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono tracking-wide leading-none">
+            <span id="appVersion">v2.4.0</span>
+            <span class="text-slate-600" aria-hidden="true">·</span>
+            <!-- Texto puesto por applyDataUpdatedLabel() desde CONFIG.dataUpdated -->
+            <span id="dataUpdated"></span>
+          </div>
         </div>
       </div>
 
@@ -1696,7 +1701,11 @@
     const CONFIG = {
       version: 'v2.4.0',
       csvFile: 'maestro.csv',
-      pageSize: 25
+      pageSize: 25,
+      // Fecha de los datos, no de la app: cámbiala cada vez que se suba un
+      // maestro.csv nuevo. Se pinta en el encabezado (ver #dataUpdated).
+      dataUpdated: '31 de agosto de 2026',
+      dataUpdatedShort: '31 ago 2026'
     };
 
     // =======================
@@ -2580,7 +2589,23 @@
         if (s && s.options[0]) s.options[0].textContent = col.label;
       });
 
+      applyDataUpdatedLabel();
       updateCompanyUi();
+    }
+
+    // Fecha de los datos junto a la versión. Solo en Maestro: CONFIG.dataUpdated
+    // se refiere a maestro.csv, así que en ZQM sería una fecha equivocada.
+    // En pantallas angostas va la forma corta para no romper el encabezado.
+    function applyDataUpdatedLabel() {
+      const el = document.getElementById('dataUpdated');
+      if (!el) return;
+      const esMaestro = CURRENT_VIEW_KEY === 'maestro';
+      el.previousElementSibling.hidden = !esMaestro;   // el separador "·"
+      if (!esMaestro) { el.textContent = ''; el.removeAttribute('title'); return; }
+      el.innerHTML =
+        `<span class="sm:hidden">${escapeHtml(CONFIG.dataUpdatedShort)}</span>` +
+        `<span class="hidden sm:inline">Última actualización: ${escapeHtml(CONFIG.dataUpdated)}</span>`;
+      el.title = `Datos del maestro al ${CONFIG.dataUpdated}`;
     }
 
     // Show/hide the company-scope UI. Only the Maestro view is company-scoped;
