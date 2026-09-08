@@ -219,3 +219,20 @@ responde con TTF en vez de WOFF2.
 - **TCH**: toneladas de caña por hectárea. En la fila de totales, el TCH se calcula como
   Σtoneladas / Σárea, **no** como promedio de los TCH por fila.
 - **Empresas**: `RIOP` (Riopaila Agrícola), `CAST` / `CAUC` (Castilla Agrícola).
+
+### Registrar un corte
+
+Llega como una lista "Validación Sec-Ste RIOCAS" con la suerte y la fecha fin. Por cada
+suerte hay que tocar **tres** columnas:
+
+| Columna | Qué se hace |
+|---|---|
+| `FECHA DE ULTIMO CORTE` | la fecha fin reportada |
+| `NUMERO DE CORTE` | +1 |
+| `FECHA DEL PROXIMO CORTE` | último corte **+ 12,5 meses** (12 meses de calendario + 15 días = 380 días) |
+
+`EDAD HOY MESES` no se toca: la app la recalcula. Verifica siempre que las suertes de la
+lista existan en el maestro antes de aplicar — han llegado lotes con códigos que no están
+(segmentos nuevos, o suertes de otra finca).
+
+El formato de fecha del CSV es **día sin cero y mes con cero**: `3/09/2026`, `21/09/2027`.
