@@ -55,6 +55,21 @@ print(len(out)-1,'filas')"
 Las únicas empresas válidas son `RIOP`, `CAST` y `CAUC`. Si aparece otra, no la verá
 nadie: la portada solo abre `?empresa=RIOP` y `?empresa=CAST,CAUC`.
 
+**Vuelve a agregar `TCH ANTERIOR` y `TCHM ANTERIOR`.** No vienen en la exportación del
+ingenio; salen de un Excel aparte (Ubic Técnica, TCH, TCHM del último corte de cada suerte,
+p. ej. `~/Documents/tch anterior.xlsx`). El script las inserta después de `TCH PPTO`, o
+las actualiza si ya existen, y es idempotente:
+
+```bash
+python tools/tch_anterior.py "C:/Users/Agr349/Documents/tch anterior.xlsx"
+```
+
+El Excel repite suertes con valores de dos cosechas distintas (sep-2026: 18 casos). El
+script se queda con el que coincide con el **último corte en `zqm.csv`**; si ninguno
+coincide, con la fila de más abajo. Ojo con las suertes recién cortadas: en sep-2026, al
+menos 62 de las cortadas desde julio mostraban el TCH de la cosecha de 2025, es decir la
+anterior a la recién hecha, porque el dato de la cosecha nueva todavía no estaba cerrado.
+
 **Recalcula `COORDENADAS` después de cada importación. Nunca uses la del ingenio.**
 La exportación trae esa columna pegada como bloque sobre una lista con suertes nuevas
 intercaladas, así que queda **corrida**: cada suerte nueva empuja todas las coordenadas
