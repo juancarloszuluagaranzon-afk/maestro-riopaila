@@ -1,6 +1,6 @@
 // Version constant. MUST match index.html (APP_VERSION, visible "v..." text)
 // and maestro.html (CONFIG.version, #appVersion span). Bump all four on release.
-const CACHE_VERSION = 'v2.4.0'; // Offline real: Tailwind y fuentes locales, rutas relativas al scope, cache-first
+const CACHE_VERSION = 'v2.4.1'; // Fuente de iconos con los 43 que usa la app (faltaban flechas de orden y los del detalle ZQM)
 const CACHE_NAME = `riopaila-maestro-${CACHE_VERSION}`;
 // El sitio se sirve bajo /maestro-riopaila/ en GitHub Pages y bajo / en local, asi
 // que la base se deriva del scope del propio SW. Con '/' fijo, el precache pedia

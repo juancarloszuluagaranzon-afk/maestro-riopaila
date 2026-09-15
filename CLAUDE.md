@@ -170,11 +170,11 @@ Un release desincronizado deja a los usuarios con caché vieja y sin forma de ac
 |---|---|
 | `service-worker.js` | `CACHE_VERSION` |
 | `index.html` | `APP_VERSION` |
-| `index.html` | texto visible `v2.4.0 • 2026 Edition` al pie |
+| `index.html` | texto visible `v2.4.1 • 2026 Edition` al pie |
 | `maestro.html` | `CONFIG.version` |
 | `maestro.html` | `<span id="appVersion">` en el encabezado |
 
-Versión actual: **v2.4.0**. Comprobación rápida — deben salir 5 coincidencias iguales:
+Versión actual: **v2.4.1**. Comprobación rápida — deben salir 5 coincidencias iguales:
 
 ```bash
 grep -oh "v2\.[0-9]*\.[0-9]*" index.html maestro.html service-worker.js | sort | uniq -c
@@ -231,7 +231,12 @@ y con estilos. Medido así en v2.4.0: 277 ms hasta `load`, HTML y CSV a 4 y 3 ms
 (un solo archivo cubre 300–800). Material Symbols va **subseteada a los íconos que usa la
 app** — 24 KB en vez de ~200 KB.
 
-Si agregas un ícono nuevo, hay que regenerar ese subset o saldrá en blanco. La lista sale de:
+Si agregas un ícono nuevo, hay que regenerar ese subset o **saldrá como texto** (se ve la
+palabra `arrow_upward` en vez de la flecha). Hoy son 43. El grep de abajo solo encuentra
+los escritos literalmente en el HTML; **no ve los que asigna el JS**, y así se perdieron 15
+en v2.4.0: las flechas de orden (`ind.textContent = … 'arrow_upward' : 'arrow_downward'`),
+los 13 de las tarjetas del detalle de ZQM (`kpiCard('water_drop', …)`) y el ícono de tema.
+Revisa también esos puntos. La lista literal sale de:
 
 ```bash
 grep -oh 'material-symbols-outlined[^>]*>[[:space:]]*[a-z0-9_]*' index.html maestro.html | grep -o '[a-z0-9_]*$' | sort -u
@@ -246,6 +251,15 @@ https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FIL
 
 Ese CSS devuelve la URL del binario; hay que descargarla con un User-Agent moderno o Google
 responde con TTF en vez de WOFF2.
+
+Comprobación en el navegador — un ícono dibujado mide ~24 px; si sale como texto mide mucho más:
+
+```js
+[...document.querySelectorAll('.material-symbols-outlined')].filter(e => e.getBoundingClientRect().width > 40).map(e => e.textContent)
+```
+
+(o crea un `<span class="material-symbols-outlined">` por cada nombre y mide su ancho). Al
+cambiar la fuente, **sube la versión**: el `.woff2` está en la caché del service worker.
 
 ## Contexto de negocio
 
