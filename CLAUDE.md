@@ -7,7 +7,8 @@ suerte a su ubicación en **Rio Map** por coordenadas.
 - **Producción:** https://juancarloszuluagaranzon-afk.github.io/maestro-riopaila/
 - **Repo:** https://github.com/juancarloszuluagaranzon-afk/maestro-riopaila (rama `main`)
 - **Despliegue:** GitHub Pages sirve `main` directamente. **Push a `main` = publicar.**
-  No hay workflow de CI (se eliminó en `4604fe9`); no hay paso de build.
+  No hay paso de build. El único workflow, `avisar-riomap.yml`, avisa a Rio Map cuando cambia
+  `maestro.csv` (Rio Map mantiene un espejo del maestro).
 
 ## Arquitectura
 
@@ -18,7 +19,7 @@ Sin build, sin dependencias, sin `package.json`. Todo es HTML/CSS/JS plano servi
 |---|---|
 | `index.html` | Portada. Selección de empresa, registro del SW, prompt de instalación PWA. |
 | `maestro.html` | **La aplicación completa** (~3.300 líneas: HTML + CSS + JS inline). |
-| `service-worker.js` | Caché offline. Network-first general, stale-while-revalidate para CSV. |
+| `service-worker.js` | Caché offline: caché primero para todo el origen (ver regla 2). |
 | `manifest.json` | Manifiesto PWA. |
 | `maestro.csv` | Datos del maestro de suertes. |
 | `zqm.csv` | Datos del histórico de cortes (ZQM101). |
@@ -229,10 +230,21 @@ suerte hay que tocar **tres** columnas:
 |---|---|
 | `FECHA DE ULTIMO CORTE` | la fecha fin reportada |
 | `NUMERO DE CORTE` | +1 |
-| `FECHA DEL PROXIMO CORTE` | último corte **+ 12,5 meses** (12 meses de calendario + 15 días = 380 días) |
+| `FECHA DEL PROXIMO CORTE` | último corte **+ el ciclo que indique quien manda la lista** |
 
-`EDAD HOY MESES` no se toca: la app la recalcula. Verifica siempre que las suertes de la
-lista existan en el maestro antes de aplicar — han llegado lotes con códigos que no están
-(segmentos nuevos, o suertes de otra finca).
+**El ciclo no es fijo: pregúntalo si no viene.** El lote del 8-sep-2026 se pidió a 12,5 meses
+(12 meses de calendario + 15 días = 380 días) y el del 14-sep-2026 a 12 meses (365 días).
+
+`EDAD HOY MESES` no se toca: la app la recalcula.
+
+Antes de aplicar, dos comprobaciones obligatorias:
+
+1. **Que la suerte exista.** Han llegado códigos que no están (segmentos nuevos, suertes
+   de otra finca, series enteras ausentes como la 2139).
+2. **Que no esté ya registrada.** Las listas se solapan: el lote del 14-sep repetía 11
+   suertes del 8-sep, con fechas que diferían 0–2 días. Si el último corte actual está a
+   pocos días de la fecha nueva, es **la misma cosecha**: sumarle +1 otra vez deja el
+   número de corte inflado. Un corte legítimo llega 9–16 meses después del anterior.
+   Con esas se decidió dejarlas como estaban; ante la duda, pregunta.
 
 El formato de fecha del CSV es **día sin cero y mes con cero**: `3/09/2026`, `21/09/2027`.
