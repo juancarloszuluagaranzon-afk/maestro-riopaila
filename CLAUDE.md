@@ -55,6 +55,25 @@ print(len(out)-1,'filas')"
 Las únicas empresas válidas son `RIOP`, `CAST` y `CAUC`. Si aparece otra, no la verá
 nadie: la portada solo abre `?empresa=RIOP` y `?empresa=CAST,CAUC`.
 
+**Recalcula `COORDENADAS` después de cada importación. Nunca uses la del ingenio.**
+La exportación trae esa columna pegada como bloque sobre una lista con suertes nuevas
+intercaladas, así que queda **corrida**: cada suerte nueva empuja todas las coordenadas
+de abajo una fila. El 8-sep-2026 se publicó así y 1.018 suertes (67%) llevaban a otra
+suerte en Rio Map — todo Riopaila iba 25 filas desplazado (3501-110 abría 3501-350).
+Los valores parecían correctos porque eran coordenadas reales… de otra suerte.
+
+```bash
+python tools/recalcular_coordenadas.py              # regenera desde la geometría de Rio Map
+python tools/recalcular_coordenadas.py --verificar  # debe decir "fuera de su propia suerte: 0"
+```
+
+Lee `~/agrocontrol-campo/public/data/tablones_{riopaila,castilla}.geojson` (cambia la ruta
+con `--geo`). Cada punto queda garantizado dentro de su propio polígono: promedio de los
+tablones; si ese promedio cae en un camino entre tablones, el tablón más grande; si no, un
+punto interior. Las suertes sin geometría quedan vacías ("Sin coordenada") — preferible a
+un enlace que lleve a otra suerte. La exportación usa `0` para "sin coordenada"; la app lo
+trata igual que vacío.
+
 ### Dos vistas en una sola UI
 
 `maestro.html` define `VIEWS = { maestro, zqm }`. Cada vista tiene su propio objeto de
@@ -83,7 +102,8 @@ https://riomap.vercel.app/mapa?p={planta}&lat={lat}&lon={lon}&n=Suerte {suerte}
 ```
 
 `p` = `riopaila` si `EMPRESA` es `RIOP`, si no `castilla`. Coordenadas mal formadas o
-vacías muestran "Sin coordenada" en vez de un enlace roto.
+vacías muestran "Sin coordenada" en vez de un enlace roto. La columna la genera
+`tools/recalcular_coordenadas.py` (ver arriba), no la exportación del ingenio.
 
 ### Lectura de CSV
 
