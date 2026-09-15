@@ -1063,7 +1063,7 @@
       letter-spacing: 0.3px;
     }
 
-    /* Enlace de ubicación (tabla) y botón "Ver en Rio Map" (detalle). */
+    /* Enlace de ubicación (tabla) e ícono de ubicación (detalle), ambos a Rio Map. */
     .riomap-link {
       display: inline-flex;
       align-items: center;
@@ -1075,32 +1075,39 @@
     }
     .riomap-link:hover { color: #2dd4bf; text-decoration: underline; }
 
-    .riomap-action { margin: 0.75rem 0 0.25rem; }
-    .riomap-btn {
+    .detail-id-top {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-      padding: 0.7rem 1rem;
-      border-radius: 0.75rem;
-      background: linear-gradient(90deg, #0d9488, #059669);
-      color: #fff;
-      font-weight: 700;
-      font-size: 0.95rem;
-      text-decoration: none;
-      box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
-      transition: filter 0.15s ease, transform 0.15s ease;
+      gap: 0.35rem;
     }
-    .riomap-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
-    .riomap-btn .material-symbols-outlined { font-size: 20px; }
-    .riomap-btn-off {
-      background: var(--glass-border);
+    /* 44px de área táctil; el margen negativo evita que agrande el encabezado. */
+    .riomap-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      margin: -10px 0;
+      border-radius: 9999px;
+      color: #14b8a6;
+      text-decoration: none;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+    .riomap-icon .material-symbols-outlined { font-size: 28px; }
+    .riomap-icon:hover { background: rgba(20, 184, 166, 0.14); color: #2dd4bf; }
+    .riomap-icon:active { background: rgba(20, 184, 166, 0.24); }
+    .riomap-icon:focus-visible { outline: 2px solid #2dd4bf; outline-offset: 1px; }
+    :root.light .riomap-icon { color: #0d9488; }
+    :root.light .riomap-icon:hover { color: #0f766e; }
+    .riomap-icon-off,
+    .riomap-icon-off:hover,
+    :root.light .riomap-icon-off {
       color: var(--text-muted);
-      box-shadow: none;
+      background: none;
+      opacity: 0.55;
       cursor: default;
     }
-    .riomap-btn-off:hover { filter: none; transform: none; }
 
     .detail-list .detail-row {
       display: flex;
@@ -3610,14 +3617,17 @@
       const finca  = getFirst('FINCA');
       const zona   = getFirst('ZONA');
 
-      // Acción de ubicación: botón que abre Rio Map en el punto de la suerte.
+      // Ubicación: ícono junto al código de la suerte que abre Rio Map en su punto.
+      // Solo ícono, pero con aria-label/title y área táctil de 44px (se usa en campo).
       const CC = coordCols();
       const coord = CC.coord !== -1 ? parseCoord(row[CC.coord]) : null;
       const empresa = CC.empresa !== -1 ? row[CC.empresa] : '';
-      const actionHtml = coord
-        ? `<a class="riomap-btn" href="${escapeHtml(rioMapUrl(coord, empresa, suerte))}" target="_blank" rel="noopener">`
-          + `<span class="material-symbols-outlined">location_on</span> Ver en Rio Map</a>`
-        : `<div class="riomap-btn riomap-btn-off"><span class="material-symbols-outlined">location_off</span> Sin coordenada</div>`;
+      const ubicacionHtml = coord
+        ? `<a class="riomap-icon" href="${escapeHtml(rioMapUrl(coord, empresa, suerte))}" target="_blank" rel="noopener"`
+          + ` title="Ver en Rio Map" aria-label="Ver suerte ${escapeHtml(suerte)} en Rio Map">`
+          + `<span class="material-symbols-outlined" aria-hidden="true">location_on</span></a>`
+        : `<span class="riomap-icon riomap-icon-off" role="img" title="Sin coordenada" aria-label="Sin coordenada">`
+          + `<span class="material-symbols-outlined" aria-hidden="true">location_off</span></span>`;
 
       // One row per column: label + value
       let rowsHtml = '';
@@ -3635,10 +3645,12 @@
 
       content.innerHTML = `
         <div class="detail-id">
-          <div class="detail-id-suerte">${escapeHtml(suerte)}</div>
+          <div class="detail-id-top">
+            <div class="detail-id-suerte">${escapeHtml(suerte)}</div>
+            ${ubicacionHtml}
+          </div>
           <div class="detail-id-sub">${escapeHtml(finca)} · Zona ${escapeHtml(zona)}</div>
         </div>
-        <div class="riomap-action">${actionHtml}</div>
         <div class="detail-list">${rowsHtml}</div>
       `;
     }
