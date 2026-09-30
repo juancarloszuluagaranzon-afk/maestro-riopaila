@@ -26,8 +26,36 @@ Sin build, sin dependencias, sin `package.json`. Todo es HTML/CSS/JS plano servi
 | `icon-192/512.png`, `logo-riopaila.png`, `logo-castilla.png` | Assets. |
 | `vendor/` | Tailwind y las fuentes, servidos desde el propio origen. |
 
-Los CSV se actualizan subiéndolos al repo (históricamente vía "Add files via upload"
-desde la web de GitHub). No hay backend ni base de datos.
+Los CSV se actualizan subiéndolos al repo. No hay backend ni base de datos.
+
+### Importar el maestro oficial
+
+Planeación y Control manda un `.xlsx` (p. ej. `maestro 30092026.xlsx`): un reporte con
+títulos arriba, ~96 columnas de trabajo interno y los encabezados reales más abajo.
+
+```bash
+python tools/importar_maestro.py "C:/ruta/maestro DDMMAAAA.xlsx"
+python tools/recalcular_coordenadas.py            # obligatorio: el importador deja COORDENADAS vacía
+python tools/recalcular_coordenadas.py --verificar # debe decir "fuera de su propia suerte: 0"
+```
+
+El importador toma las 19 columnas de la app en su orden, aplica los formatos del CSV
+(fechas `d/MM/yyyy`, toneladas y TCH enteros, área y edad con 2 decimales), **filtra las
+filas `EMPRESA = BENG`** y **conserva `TCH ANTERIOR` / `TCHM ANTERIOR`** del CSV anterior,
+porque el oficial no las trae. Si el reporte cambia de estructura, el script aborta en vez
+de escribir columnas corridas: valida que cada índice de `MAPA` tenga el encabezado
+esperado.
+
+**Antes de publicar, compara contra lo que está publicado.** El oficial va por detrás de
+los ajustes que pide el usuario y los revierte en silencio. En la importación del
+30-sep-2026 revertía 158 suertes de técnico agrícola (cambios pedidos dos días antes) y
+3 cortes de Riopaila registrados el 22-23 de septiembre. Revisa al menos:
+
+```bash
+git diff --stat maestro.csv     # y el detalle por columna antes de confirmar
+```
+
+técnico agrícola, responsable de zona, fecha y número de corte, y suertes que desaparecen.
 
 **Al subir un `maestro.csv` nuevo, actualiza también `CONFIG.dataUpdated` y
 `CONFIG.dataUpdatedShort`** en `maestro.html`: es la fecha de los datos que se muestra
