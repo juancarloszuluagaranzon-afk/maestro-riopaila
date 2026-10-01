@@ -7,6 +7,9 @@ CSV (fechas d/MM/yyyy, toneladas y TCH enteros, área y edad con 2 decimales).
 
 Lo que el oficial NO trae y este script conserva del maestro.csv actual:
   - TCH ANTERIOR y TCHM ANTERIOR (vienen de otro Excel; ver tools/tch_anterior.py)
+  - TCH RANDOM FOREST (del Estimador TCH; ver tools/tch_random_forest.py), solo si la
+    suerte sigue en el mismo NUMERO DE CORTE: si el oficial trae un corte nuevo, ese
+    estimado era de la caña cosechada y la celda queda vacía.
   - COORDENADAS: se dejan vacías a propósito. Después de importar hay que correr
     tools/recalcular_coordenadas.py, que las regenera desde la geometría.
 
@@ -25,10 +28,11 @@ MAPA = [
     ('EDAD HOY MESES', 20), ('Zona Agroecologica', 14), ('VARIEDAD', 23),
     ('USO DE LA SUERTE', 16), ('FECHA DE SIEMBRA', 18), ('FECHA DE ULTIMO CORTE', 19),
     ('NUMERO DE CORTE', 21), ('TONELADAS PPTO', 30), ('TCH PPTO', 32),
-    ('TCH ANTERIOR', None), ('TCHM ANTERIOR', None), ('TONELADAS ESTIMADAS', 37),
+    ('TCH ANTERIOR', None), ('TCHM ANTERIOR', None), ('TCH RANDOM FOREST', None), ('TONELADAS ESTIMADAS', 37),
     ('RESPONSABLE ZONA', 6), ('TECNICO AGRICOLA RESPONSABLE', 7),
     ('FECHA DEL PROXIMO CORTE', 11), ('EMPRESA', 4), ('COORDENADAS', None),
 ]
+MAPA_IDX = dict(MAPA)
 ENTEROS = {'TONELADAS PPTO', 'TCH PPTO', 'TONELADAS ESTIMADAS', 'NUMERO DE CORTE', 'ZONA'}
 DOS_DECIMALES = {'AREA NETA HA', 'EDAD HOY MESES'}
 CODIGO = re.compile(r'\d{4}-\d{3}')
@@ -54,7 +58,8 @@ def celda(col, v):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('xlsx')
-    ap.add_argument('--maestro', default='maestro.csv', help='CSV del que se heredan TCH ANTERIOR y TCHM ANTERIOR')
+    ap.add_argument('--maestro', default='maestro.csv',
+                    help='CSV del que se heredan TCH ANTERIOR, TCHM ANTERIOR y TCH RANDOM FOREST')
     ap.add_argument('--salida', default=None, help='por defecto sobrescribe --maestro')
     a = ap.parse_args()
 
@@ -74,30 +79,36 @@ def main():
                              'Cambió el formato del reporte: revisa MAPA.')
     datos = [r for r in filas[hdr + 1:] if r[0] and CODIGO.fullmatch(str(r[0]).strip())]
 
-    # TCH ANTERIOR / TCHM ANTERIOR del CSV actual
+    # TCH ANTERIOR / TCHM ANTERIOR / TCH RANDOM FOREST (con su NUMERO DE CORTE) del CSV actual
     previo = {}
     try:
         ls = [l for l in io.open(a.maestro, encoding='utf-8-sig', newline='').read().split('\r\n') if l.strip()]
         h = ls[0].split(';')
-        iS, iT, iTM = h.index('SUERTE'), h.index('TCH ANTERIOR'), h.index('TCHM ANTERIOR')
+        iS, iT, iTM, iC = h.index('SUERTE'), h.index('TCH ANTERIOR'), h.index('TCHM ANTERIOR'), h.index('NUMERO DE CORTE')
+        iRF = h.index('TCH RANDOM FOREST') if 'TCH RANDOM FOREST' in h else None
         for l in ls[1:]:
             c = l.split(';')
-            previo[c[iS].strip()] = (c[iT], c[iTM])
+            previo[c[iS].strip()] = (c[iT], c[iTM], c[iRF] if iRF is not None else '', c[iC].strip())
     except (FileNotFoundError, ValueError):
         print('aviso: no se pudo leer TCH ANTERIOR del CSV actual; quedarán vacías')
 
-    salida, beng, sin_tch = [';'.join(c for c, _ in MAPA)], 0, 0
+    salida, beng, sin_tch, rf_vaciado = [';'.join(c for c, _ in MAPA)], 0, 0, 0
     for r in datos:
         if str(r[4] or '').strip() == 'BENG':
             beng += 1
             continue
         s = str(r[0]).strip()
+        p = previo.get(s, ('', '', '', ''))
         fila = []
         for col, j in MAPA:
             if col == 'TCH ANTERIOR':
-                fila.append(previo.get(s, ('', ''))[0])
+                fila.append(p[0])
             elif col == 'TCHM ANTERIOR':
-                fila.append(previo.get(s, ('', ''))[1])
+                fila.append(p[1])
+            elif col == 'TCH RANDOM FOREST':
+                mismo_corte = p[3] == celda('NUMERO DE CORTE', r[MAPA_IDX['NUMERO DE CORTE']])
+                fila.append(p[2] if mismo_corte else '')
+                rf_vaciado += bool(p[2]) and not mismo_corte
             elif col == 'COORDENADAS':
                 fila.append('')
             else:
@@ -108,7 +119,8 @@ def main():
 
     destino = a.salida or a.maestro
     io.open(destino, 'w', encoding='utf-8', newline='').write('\ufeff' + '\r\n'.join(salida) + '\r\n')
-    print(f'{destino}: {len(salida)-1} suertes | BENG filtradas: {beng} | sin TCH anterior: {sin_tch}')
+    print(f'{destino}: {len(salida)-1} suertes | BENG filtradas: {beng} | sin TCH anterior: {sin_tch} | '
+          f'TCH RANDOM FOREST vaciado por corte nuevo: {rf_vaciado}')
     print('FALTA: python tools/recalcular_coordenadas.py   (COORDENADAS quedó vacía)')
 
 

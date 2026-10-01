@@ -98,6 +98,25 @@ coincide, con la fila de más abajo. Ojo con las suertes recién cortadas: en se
 menos 62 de las cortadas desde julio mostraban el TCH de la cosecha de 2025, es decir la
 anterior a la recién hecha, porque el dato de la cosecha nueva todavía no estaba cerrado.
 
+**`TCH RANDOM FOREST`: llénala después de cada corrida mensual del Estimador TCH.** Es el
+TCH estimado que muestra el visor "Modelo predictivo de TCH · Random Forest" (ya ajustado
+con el factor de campaña). Sale de `~/tch-dashboard/data/estimados.json`, que escribe
+`tch-motor/scripts/mensual.py` el día 2 de cada mes. Va después de `TCHM ANTERIOR`, con 1
+decimal; el script es idempotente:
+
+```bash
+python tools/tch_random_forest.py                     # o la ruta de otro estimados.json
+```
+
+- Solo llena la suerte si el estimado es de la caña que el maestro tiene creciendo: misma
+  soca que `NUMERO DE CORTE` y ningún corte posterior a la fecha de la corrida.
+- Quedan vacías las suertes sin estimado: menos de 4 meses, sin polígono en el mapa,
+  renovación u otros usos.
+- El importador la conserva, salvo en las suertes que traen un corte nuevo.
+- El total es el TCH ponderado por área de las suertes con dato.
+- El motor lee este mismo `maestro.csv` publicado para sacar la edad y la soca. Por eso,
+  importa el maestro oficial **antes** de la corrida mensual cuando se pueda.
+
 **Recalcula `COORDENADAS` después de cada importación. Nunca uses la del ingenio.**
 La exportación trae esa columna pegada como bloque sobre una lista con suertes nuevas
 intercaladas, así que queda **corrida**: cada suerte nueva empuja todas las coordenadas
