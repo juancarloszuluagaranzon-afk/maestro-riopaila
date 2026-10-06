@@ -1,9 +1,11 @@
 # Cuando cambia maestro.csv en main, avisa a Rio Map (agrocontrol-campo) para
 # que su workflow "Sync maestro" regenere el maestro y abra el PR de inmediato.
-# Requiere el secreto RIOMAP_DISPATCH_TOKEN (PAT fine-grained con permiso
-# Contents + Pull requests sobre agrocontrol-campo). Sin el secreto no falla:
-# Rio Map se sincroniza igual en su corrida diaria (06:00, L-V).
-# No afecta a GitHub Pages: el sitio se sigue publicando desde main.
+# Requiere el secreto RIOMAP_DISPATCH_TOKEN (PAT fine-grained sobre
+# agrocontrol-campo con Contents y Pull requests en READ AND WRITE: con
+# Read-only el GET del repo pasa pero el POST de dispatches devuelve 403
+# "Resource not accessible by personal access token"). Caduca el 7-abr-2027.
+# Sin el secreto no falla: Rio Map se sincroniza igual en su corrida diaria
+# (06:00, L-V). No afecta a GitHub Pages: el sitio se publica desde main.
 name: Avisar a Rio Map
 
 on:
@@ -24,23 +26,6 @@ jobs:
       - name: Sin token configurado
         if: env.TOKEN == ''
         run: echo "RIOMAP_DISPATCH_TOKEN no está configurado; Rio Map tomará el cambio en su sincronización diaria."
-
-      # TEMPORAL: dice qué alcance tiene el token, para saber qué permiso le
-      # falta sin tener que adivinar. El token viaja en una cabecera y no se
-      # imprime nunca; solo salen códigos de estado y el objeto `permissions`.
-      - name: DIAGNOSTICO TEMPORAL - alcance del token
-        if: env.TOKEN != ''
-        run: |
-          API=https://api.github.com/repos/juancarloszuluagaranzon-afk/agrocontrol-campo
-          echo "--- GET del repositorio (dice si el token lo ve y con qué acceso)"
-          curl -s -o cuerpo.json -w '    HTTP %{http_code}' -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" "$API"
-          echo ""
-          echo "    permissions: $(jq -c '.permissions // "(no viene)"' cuerpo.json)"
-          echo "    mensaje....: $(jq -r '.message // "(ok)"' cuerpo.json)"
-          echo "--- POST del dispatch (el que está fallando)"
-          curl -s -o envio.json -w '    HTTP %{http_code}' -X POST -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" "$API/dispatches" -d '{"event_type":"diagnostico-token"}'
-          echo ""
-          echo "    mensaje....: $(jq -r '.message // "(sin cuerpo = exito)"' envio.json)"
 
       - name: Enviar repository_dispatch a agrocontrol-campo
         if: env.TOKEN != ''
