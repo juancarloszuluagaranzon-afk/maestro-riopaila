@@ -25,6 +25,21 @@ jobs:
         if: env.TOKEN == ''
         run: echo "RIOMAP_DISPATCH_TOKEN no está configurado; Rio Map tomará el cambio en su sincronización diaria."
 
+      - name: DIAGNOSTICO TEMPORAL - que alcance tiene el token
+        if: env.TOKEN != ''
+        run: |
+          # Solo imprime codigos de estado y el objeto `permissions` del repo.
+          # El token viaja en una cabecera y nunca se imprime.
+          echo "GET /repos/.../agrocontrol-campo"
+          curl -s -o cuerpo.json -w "  HTTP %{http_code}
+"             -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json"             https://api.github.com/repos/juancarloszuluagaranzon-afk/agrocontrol-campo
+          echo "  permissions: $(jq -c '.permissions // "(sin campo permissions)"' cuerpo.json)"
+          echo "  mensaje: $(jq -r '.message // "-"' cuerpo.json)"
+          echo "POST /repos/.../dispatches (el que falla)"
+          curl -s -o d.json -w "  HTTP %{http_code}
+" -X POST             -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json"             https://api.github.com/repos/juancarloszuluagaranzon-afk/agrocontrol-campo/dispatches             -d '{"event_type":"diagnostico-token"}'
+          echo "  mensaje: $(jq -r '.message // "(sin cuerpo: exito)"' d.json)"
+
       - name: Enviar repository_dispatch a agrocontrol-campo
         if: env.TOKEN != ''
         uses: peter-evans/repository-dispatch@v3
