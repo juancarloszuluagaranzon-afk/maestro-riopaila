@@ -61,15 +61,37 @@ def main():
     ap.add_argument('--maestro', default='maestro.csv',
                     help='CSV del que se heredan TCH ANTERIOR, TCHM ANTERIOR y TCH RANDOM FOREST')
     ap.add_argument('--salida', default=None, help='por defecto sobrescribe --maestro')
+    ap.add_argument('--hoja', default=None,
+                    help='hoja a leer; por defecto busca la que tenga SUERTE en la columna A '
+                         '(el libro completo de Planeación trae 22 hojas)')
     a = ap.parse_args()
 
     import openpyxl
-    ws = openpyxl.load_workbook(a.xlsx, data_only=True).worksheets[0]
+    wb = openpyxl.load_workbook(a.xlsx, data_only=True)
+
+    def encabezados(ws):
+        """Fila de encabezados de la hoja, o None si no la tiene."""
+        for i, r in enumerate(ws.iter_rows(min_row=1, max_row=12, values_only=True)):
+            if r and str(r[0] or '').strip().upper() == 'SUERTE':
+                return i
+        return None
+
+    if a.hoja:
+        if a.hoja not in wb.sheetnames:
+            raise SystemExit(f'el libro no tiene la hoja {a.hoja!r}. Hojas: {wb.sheetnames}')
+        ws = wb[a.hoja]
+    else:
+        candidatas = [h for h in wb.sheetnames if encabezados(wb[h]) is not None]
+        if not candidatas:
+            raise SystemExit(f'ninguna hoja tiene SUERTE en la columna A. Hojas: {wb.sheetnames}')
+        if len(candidatas) > 1:
+            raise SystemExit(f'varias hojas podrían servir ({candidatas}); elige una con --hoja')
+        ws = wb[candidatas[0]]
+        if len(wb.sheetnames) > 1:
+            print(f'hoja: {ws.title}')
     filas = list(ws.iter_rows(values_only=True))
-    try:
-        hdr = next(i for i, r in enumerate(filas)
-                   if r and str(r[0] or '').strip().upper() == 'SUERTE')
-    except StopIteration:
+    hdr = encabezados(ws)
+    if hdr is None:
         raise SystemExit('no se encontró la fila de encabezados (celda A = SUERTE)')
     # los encabezados del oficial deben estar donde los espera MAPA
     reales = {j: str(filas[hdr][j] or '').replace('\n', ' ').strip().upper() for _, j in MAPA if j is not None}

@@ -115,6 +115,7 @@ def main():
     iS, iC = h.index('SUERTE'), h.index('COORDENADAS')
 
     metodos, errores, vacias, cambios = defaultdict(int), [], [], 0
+    sin_geometria = []
     for n, l in enumerate(lineas[1:], start=1):
         if not l.strip():
             continue
@@ -126,14 +127,29 @@ def main():
                 lat, lon = map(float, c[iC].strip().split(','))
             except ValueError:
                 vacias.append(s); continue
-            if not tabs or not any(dentro_poligono(lon, lat, pl) for t in tabs for pl in t[3]):
+            if not tabs:
+                # La suerte no está en la cartografía (re-suerteo, o shapefile viejo) y
+                # conserva una coordenada de una versión anterior. No es un error: no hay
+                # polígono contra el cual comprobarla. Se cuenta aparte para que un error
+                # de verdad no se pierda entre estas.
+                sin_geometria.append(s)
+            elif not any(dentro_poligono(lon, lat, pl) for t in tabs for pl in t[3]):
                 errores.append(s)
             continue
         r = punto_de_suerte(tabs) if tabs else None
-        nuevo = f'{r[0]:.6f},{r[1]:.6f}' if r else ''
+        actual = c[iC].strip()
         if r:
+            nuevo = f'{r[0]:.6f},{r[1]:.6f}'
             metodos[r[2]] += 1
+        elif ',' in actual:
+            # Sin cartografía pero con coordenada previa: se CONSERVA, no se borra.
+            # La cartografía de septiembre de 2026 dejó fuera 79 suertes activas de
+            # Castilla y Cauca; vaciarlas les quitaba el enlace a Rio Map sin que
+            # nada hubiera cambiado en campo.
+            nuevo = actual
+            sin_geometria.append(s)
         else:
+            nuevo = ''
             vacias.append(s)
         if c[iC] != nuevo:
             c[iC] = nuevo
@@ -142,7 +158,10 @@ def main():
 
     total = sum(1 for l in lineas[1:] if l.strip())
     if a.verificar:
-        print(f'{total} suertes | fuera de su propia suerte: {len(errores)} | sin coordenada: {len(vacias)}')
+        print(f'{total} suertes | fuera de su propia suerte: {len(errores)} | '
+              f'sin coordenada: {len(vacias)} | con coordenada conservada, sin cartografía: {len(sin_geometria)}')
+        if sin_geometria:
+            print('  sin cartografía:', ', '.join(sin_geometria[:20]) + (' ...' if len(sin_geometria) > 20 else ''))
         if errores:
             print('  MAL:', ', '.join(errores[:30]) + (' ...' if len(errores) > 30 else ''))
         sys.exit(1 if errores else 0)
@@ -150,9 +169,12 @@ def main():
     io.open(a.maestro, 'w', encoding='utf-8', newline='').write('﻿' + '\r\n'.join(lineas))
     print(f'{total} suertes | COORDENADAS cambiadas: {cambios} | '
           + ' | '.join(f'{k}: {v}' for k, v in metodos.items())
-          + f' | sin geometría (vacías): {len(vacias)}')
+          + f' | conservadas sin cartografía: {len(sin_geometria)}'
+          + f' | sin coordenada: {len(vacias)}')
+    if sin_geometria:
+        print('  conservadas (no están en la cartografía):', ', '.join(sin_geometria))
     if vacias:
-        print('  sin geometría:', ', '.join(vacias))
+        print('  sin coordenada:', ', '.join(vacias))
 
 
 if __name__ == '__main__':
