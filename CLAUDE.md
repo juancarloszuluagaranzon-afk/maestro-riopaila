@@ -217,17 +217,37 @@ Un release desincronizado deja a los usuarios con caché vieja y sin forma de ac
 |---|---|
 | `service-worker.js` | `CACHE_VERSION` |
 | `index.html` | `APP_VERSION` |
-| `index.html` | texto visible `v2.4.1 • 2026 Edition` al pie |
+| `index.html` | texto visible `v2.5.1 • 2026 Edition` al pie |
 | `maestro.html` | `CONFIG.version` |
 | `maestro.html` | `<span id="appVersion">` en el encabezado |
 
-Versión actual: **v2.4.1**. Comprobación rápida — deben salir 5 coincidencias iguales:
+Versión actual: **v2.5.1**. Comprobación rápida — deben salir 5 coincidencias iguales:
 
 ```bash
 grep -oh "v2\.[0-9]*\.[0-9]*" index.html maestro.html service-worker.js | sort | uniq -c
 ```
 
-### 4. Un solo archivo, sin framework
+### 4. Temporadas: solo el acento, nunca el significado
+
+Hay un tema de Halloween que se enciende **solo por fecha, del 24 de octubre al 2 de
+noviembre**, cualquier año (`aplicarTemporada()`, en el `<head>` de `index.html` y
+`maestro.html` para que la clase `temporada-halloween` exista antes del primer pintado y no
+haya parpadeo). No hay interruptor ni nada que recordar apagar.
+
+Lo que cambia: el acento teal pasa a ámbar (título, encabezados de la tabla, enlace a Rio
+Map), los tres blobs de la portada pasan a calabaza y violeta, y aparece una calabaza
+dibujada en SVG junto al título.
+
+Lo que **no** cambia, y es la regla: los colores que significan algo. Verde de éxito, ámbar
+de aviso, rojo de error, teal de la empresa activa y de la navegación. Si el acento de
+temporada se comiera esos, la app diría cosas que no son.
+
+Los tonos están escogidos por contraste sobre cada fondo, porque esto se lee a pleno sol:
+`#fbbf24` en oscuro (10,7:1) y `#b45309` en claro (4,6:1 sobre el encabezado y 5,0:1 sobre
+blanco). Si algún día se agrega otra temporada, el mismo molde sirve: una clase en `<html>`,
+solo tokens de acento, y los colores de estado quietos.
+
+### 5. Un solo archivo, sin framework
 
 `maestro.html` es intencionalmente monolítico para que funcione offline sin build. Mantén
 el estilo existente: funciones planas, `STATE` compartido, sin dependencias nuevas.

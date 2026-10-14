@@ -91,6 +91,63 @@
       --aurora-blend: normal;
     }
 
+    /* --- Temporada: Halloween (24 de octubre – 2 de noviembre) -----------------
+       Sobrio a propósito: solo se mueve el acento, de teal a ámbar. Nada de
+       animaciones ni tipografías nuevas — esto se consulta a pleno sol en el lote
+       y la legibilidad manda sobre el disfraz. Los tonos se eligieron por
+       contraste sobre cada fondo: #fbbf24 sobre el encabezado oscuro (≈10:1) y
+       #b45309 en tema claro (≈5:1), los dos por encima del mínimo de 4,5:1.
+       Los colores de estado (verde de éxito, ámbar de aviso, rojo de error) NO
+       cambian: significan algo y confundirlos sería peor que no celebrar nada.
+       Se enciende y se apaga sola; ver aplicarTemporada(). */
+    :root.temporada-halloween {
+      --table-header-text: #fbbf24;
+    }
+
+    :root.temporada-halloween.light {
+      --table-header-text: #b45309;
+    }
+
+    :root.temporada-halloween .text-teal-400,
+    :root.temporada-halloween .riomap-link {
+      color: #fbbf24;
+    }
+
+    :root.temporada-halloween.light .text-teal-400,
+    :root.temporada-halloween.light .riomap-link {
+      color: #b45309;
+    }
+
+    :root.temporada-halloween .riomap-icon {
+      color: #f59e0b;
+    }
+
+    :root.temporada-halloween .riomap-icon:hover {
+      background: rgba(245, 158, 11, 0.14);
+      color: #fbbf24;
+    }
+
+    :root.temporada-halloween.light .riomap-icon,
+    :root.temporada-halloween.light .riomap-icon:hover {
+      color: #b45309;
+    }
+
+    /* La calabaza solo existe en temporada. Dibujada, no emoji: mismo trazo y
+       mismo peso que los íconos de la app. */
+    .calabaza {
+      display: none;
+      flex-shrink: 0;
+      color: #f59e0b;
+    }
+
+    :root.temporada-halloween .calabaza {
+      display: block;
+    }
+
+    :root.temporada-halloween.light .calabaza {
+      color: #b45309;
+    }
+
     /* Stop animating + remove the blur cost in light mode */
     :root.light .blob {
       display: none;
@@ -1342,6 +1399,18 @@
     }
   }
   </script>
+  <script>
+    // Temporada de Halloween: del 24 de octubre al 2 de noviembre, cualquier año.
+    // Se aplica aquí, en el <head>, para que la clase exista antes del primer
+    // pintado y no haya parpadeo de color. Se apaga sola: nadie tiene que
+    // acordarse de quitarla, ni este año ni los siguientes.
+    (function aplicarTemporada() {
+      const hoy = new Date(), mes = hoy.getMonth() + 1, dia = hoy.getDate();
+      if ((mes === 10 && dia >= 24) || (mes === 11 && dia <= 2)) {
+        document.documentElement.classList.add('temporada-halloween');
+      }
+    })();
+  </script>
 </head>
 
 <body class="h-[100dvh] w-full overflow-hidden flex flex-col selection:bg-teal-500/30 selection:text-teal-200">
@@ -1363,10 +1432,19 @@
           <img src="icon-192.png" alt="Logo" class="w-6 h-6 object-contain">
         </div>
         <div class="flex flex-col">
-          <h1 class="font-bold text-base leading-none tracking-tight" id="appTitleText" style="color: var(--text-main)">Maestro de <span
-              class="text-teal-400">Suertes</span></h1>
+          <div class="flex items-center gap-1.5">
+            <h1 class="font-bold text-base leading-none tracking-tight" id="appTitleText" style="color: var(--text-main)">Maestro de <span
+                class="text-teal-400">Suertes</span></h1>
+            <svg class="calabaza" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 8.4c4.3 0 7.8 2.6 7.8 5.9s-3.5 5.9-7.8 5.9-7.8-2.6-7.8-5.9S7.7 8.4 12 8.4Z" />
+              <path d="M9.3 9c-.8 1.4-1.3 3.2-1.3 5.3s.5 3.9 1.3 5.3" />
+              <path d="M14.7 9c.8 1.4 1.3 3.2 1.3 5.3s-.5 3.9-1.3 5.3" />
+              <path d="M12 8.4V6.3c0-1 .8-1.8 1.8-1.8" />
+            </svg>
+          </div>
           <div class="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono tracking-wide leading-none">
-            <span id="appVersion">v2.5.0</span>
+            <span id="appVersion">v2.5.1</span>
             <span class="text-slate-600" aria-hidden="true">·</span>
             <!-- Texto puesto por applyDataUpdatedLabel() desde CONFIG.dataUpdated -->
             <span id="dataUpdated"></span>
@@ -1706,7 +1784,7 @@
     // NOTE: `version` below MUST match service-worker.js (CACHE_VERSION),
     // index.html (APP_VERSION) and the <span id="appVersion"> text in the header.
     const CONFIG = {
-      version: 'v2.5.0',
+      version: 'v2.5.1',
       csvFile: 'maestro.csv',
       pageSize: 25,
       // Fecha de los datos, no de la app: cámbiala cada vez que se suba un
