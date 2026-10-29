@@ -1444,7 +1444,7 @@
             </svg>
           </div>
           <div class="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono tracking-wide leading-none">
-            <span id="appVersion">v2.5.1</span>
+            <span id="appVersion">v2.5.2</span>
             <span class="text-slate-600" aria-hidden="true">·</span>
             <!-- Texto puesto por applyDataUpdatedLabel() desde CONFIG.dataUpdated -->
             <span id="dataUpdated"></span>
@@ -1766,9 +1766,25 @@
           </div>
 
           <!-- Footer -->
-          <div class="bg-slate-900/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-white/5">
+          <!-- Compartir / Descargar generan una imagen PNG de la ficha (ver renderDetailPng) -->
+          <div class="bg-slate-900/50 px-4 py-3 sm:px-6 flex flex-wrap gap-2 sm:justify-end border-t border-white/5">
+            <button type="button" id="modalDownload"
+              class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-lg bg-white/5 px-3 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-white/10 disabled:opacity-50 transition-all"
+              onclick="downloadDetail()">
+              <span class="material-symbols-outlined text-lg" aria-hidden="true">download</span>
+              Descargar
+            </button>
+            <button type="button" id="modalShare"
+              class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-500 disabled:opacity-50 transition-all"
+              onclick="shareDetail()">
+              <!-- SVG en línea: 'share' no está en el subset de Material Symbols -->
+              <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z" />
+              </svg>
+              Compartir
+            </button>
             <button type="button"
-              class="mt-3 inline-flex w-full justify-center rounded-lg bg-white/5 px-3 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-white/10 sm:mt-0 sm:w-auto transition-all"
+              class="w-full sm:w-auto inline-flex items-center justify-center rounded-lg bg-white/5 px-3 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-white/10 hover:bg-white/10 transition-all"
               onclick="closeModal()">Cerrar</button>
           </div>
 
@@ -1784,7 +1800,7 @@
     // NOTE: `version` below MUST match service-worker.js (CACHE_VERSION),
     // index.html (APP_VERSION) and the <span id="appVersion"> text in the header.
     const CONFIG = {
-      version: 'v2.5.1',
+      version: 'v2.5.2',
       csvFile: 'maestro.csv',
       pageSize: 25,
       // Fecha de los datos, no de la app: cámbiala cada vez que se suba un
@@ -3787,6 +3803,231 @@
       document.getElementById('detailModal').classList.add('hidden');
       document.body.style.overflow = '';
       STATE.modalRowIndex = -1;
+    }
+
+    // =======================
+    // COMPARTIR / DESCARGAR DETALLE
+    // =======================
+    // La ficha se dibuja a mano en un <canvas> (sin html2canvas: nada de
+    // dependencias nuevas, y así funciona offline). Siempre en tema claro,
+    // porque la imagen se ve fuera de la app (WhatsApp, correo, impresa).
+    const EMPRESA_NOMBRE = { RIOP: 'Riopaila Agrícola', CAST: 'Castilla Agrícola', CAUC: 'Castilla Agrícola' };
+
+    // Datos de la ficha abierta: identidad, campos en el orden de la tabla y enlace a Rio Map.
+    function detailExportData(row) {
+      const headers = STATE.headers;
+      const findIdx = (norm) => headers.findIndex(h => normalizeHeader(h) === norm);
+      const get = (...norms) => {
+        for (const n of norms) {
+          const i = findIdx(n);
+          if (i !== -1) return sanitizeCell(row[i]).text;
+        }
+        return '—';
+      };
+
+      const fields = headers.map((header, i) => {
+        const s = sanitizeCell(row[i]);
+        return {
+          label: header,
+          value: s.isEmpty ? s.text : (isDateHeader(header) ? formatDateDisplay(s.text) : s.text)
+        };
+      });
+
+      const CC = coordCols();
+      const empresa = CC.empresa !== -1 ? String(row[CC.empresa] || '').trim() : '';
+      let id, sub, fileBase, link = '';
+      if (STATE.key === 'zqm') {
+        const ubicIdx = headers.findIndex(h => normalizeHeader(h).startsWith('UBIC'));
+        id = ubicIdx !== -1 ? sanitizeCell(row[ubicIdx]).text : '—';
+        const ano = get('AÑO', 'ANO', 'AÃO'), mes = get('MES');
+        sub = `${get('SECTOR')} · Mes ${mes} · ${ano} · Corte ${get('CORTE')}`;
+        fileBase = `corte-${id}-${ano}-${mes}`;
+      } else {
+        id = get('SUERTE');
+        sub = `${get('FINCA')} · Zona ${get('ZONA')}`;
+        fileBase = `suerte-${id}`;
+        const coord = CC.coord !== -1 ? parseCoord(row[CC.coord]) : null;
+        if (coord) link = rioMapUrl(coord, empresa, id);
+      }
+
+      return {
+        title: STATE.modalTitle || 'Detalle',
+        empresa: EMPRESA_NOMBRE[empresa] || 'Riopaila · Castilla',
+        id, sub, fields, link,
+        fileName: fileBase.replace(/[^\w.-]+/g, '_') + '.png'
+      };
+    }
+
+    // Parte un texto en líneas que caben en maxW (por palabras; corta palabras muy largas).
+    function wrapCanvasText(ctx, text, maxW) {
+      const lines = [];
+      let line = '';
+      for (const word of String(text).split(/\s+/)) {
+        let w = word;
+        while (ctx.measureText(w).width > maxW && w.length > 1) {
+          let n = w.length - 1;
+          while (n > 1 && ctx.measureText(w.slice(0, n)).width > maxW) n--;
+          if (line) { lines.push(line); line = ''; }
+          lines.push(w.slice(0, n));
+          w = w.slice(n);
+        }
+        const probe = line ? `${line} ${w}` : w;
+        if (ctx.measureText(probe).width <= maxW) line = probe;
+        else { if (line) lines.push(line); line = w; }
+      }
+      if (line || !lines.length) lines.push(line);
+      return lines;
+    }
+
+    async function renderDetailPng(data) {
+      const S = 2;                 // escala: 540 px lógicos → 1080 px reales, nítido en el teléfono
+      const W = 540, PAD = 24;
+      const FONT = "Manrope, system-ui, sans-serif";
+      const C = {
+        band: '#0f766e', bandText: '#ffffff', bandMuted: '#ccfbf1',
+        text: '#0f172a', muted: '#64748b', zebra: '#f1f5f9', line: '#e2e8f0', bg: '#ffffff'
+      };
+      try { await document.fonts.load(`700 16px Manrope`); } catch (_) { /* usa la fuente del sistema */ }
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const labelW = 200, valueX = PAD + labelW + 12, valueW = W - valueX - PAD;
+      const LINE_H = 19, ROW_PAD = 8;
+
+      // Primera pasada: medir el alto de cada campo.
+      ctx.font = `600 11px ${FONT}`;
+      const measured = data.fields.map(f => {
+        ctx.font = `600 11px ${FONT}`;
+        const labelLines = wrapCanvasText(ctx, f.label.toUpperCase(), labelW);
+        ctx.font = `700 14px ${FONT}`;
+        const valueLines = wrapCanvasText(ctx, f.value, valueW);
+        const h = Math.max(labelLines.length, valueLines.length) * LINE_H + ROW_PAD * 2;
+        return { ...f, labelLines, valueLines, h };
+      });
+
+      const BAND_H = 64, ID_H = 78, FOOT_H = 48;
+      const H = BAND_H + ID_H + measured.reduce((a, f) => a + f.h, 0) + FOOT_H;
+      canvas.width = W * S;
+      canvas.height = H * S;
+      ctx.scale(S, S);
+      ctx.textBaseline = 'middle';
+
+      ctx.fillStyle = C.bg;
+      ctx.fillRect(0, 0, W, H);
+
+      // Banda superior
+      ctx.fillStyle = C.band;
+      ctx.fillRect(0, 0, W, BAND_H);
+      ctx.fillStyle = C.bandMuted;
+      ctx.font = `700 11px ${FONT}`;
+      ctx.fillText(`MAESTRO DE SUERTES · ${data.empresa.toUpperCase()}`, PAD, 22);
+      ctx.fillStyle = C.bandText;
+      ctx.font = `800 18px ${FONT}`;
+      ctx.fillText(data.title, PAD, 44);
+
+      // Identidad
+      let y = BAND_H;
+      ctx.fillStyle = C.text;
+      ctx.font = `800 28px ${FONT}`;
+      ctx.fillText(data.id, PAD, y + 30);
+      ctx.fillStyle = C.muted;
+      ctx.font = `500 13px ${FONT}`;
+      ctx.fillText(data.sub, PAD, y + 56);
+      y += ID_H;
+      ctx.fillStyle = C.line;
+      ctx.fillRect(PAD, y - 1, W - PAD * 2, 1);
+
+      // Campos
+      measured.forEach((f, i) => {
+        if (i % 2 === 0) {
+          ctx.fillStyle = C.zebra;
+          ctx.fillRect(PAD - 8, y, W - (PAD - 8) * 2, f.h);
+        }
+        const top = y + ROW_PAD + LINE_H / 2;
+        ctx.fillStyle = C.muted;
+        ctx.font = `600 11px ${FONT}`;
+        f.labelLines.forEach((l, k) => ctx.fillText(l, PAD, top + k * LINE_H));
+        ctx.fillStyle = f.value === '—' ? C.muted : C.text;
+        ctx.font = `700 14px ${FONT}`;
+        f.valueLines.forEach((l, k) => ctx.fillText(l, valueX, top + k * LINE_H));
+        y += f.h;
+      });
+
+      // Pie
+      ctx.fillStyle = C.line;
+      ctx.fillRect(PAD, y, W - PAD * 2, 1);
+      ctx.fillStyle = C.muted;
+      ctx.font = `500 11px ${FONT}`;
+      const generado = new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+      // El enlace a Rio Map no va en la imagen (no se puede tocar); va en el texto al compartir.
+      ctx.fillText(`Datos al ${CONFIG.dataUpdated} · Generado ${generado} · ${CONFIG.version}`, PAD, y + 24);
+
+      return new Promise((resolve, reject) =>
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('No se pudo generar la imagen')), 'image/png'));
+    }
+
+    function downloadBlob(blob, fileName) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // Deshabilita los botones mientras se genera la imagen (evita dobles toques).
+    async function withDetailButtons(fn) {
+      const btns = ['modalShare', 'modalDownload'].map(id => document.getElementById(id));
+      btns.forEach(b => { if (b) b.disabled = true; });
+      try { await fn(); }
+      finally { btns.forEach(b => { if (b) b.disabled = false; }); }
+    }
+
+    function currentDetailRow() {
+      const idx = STATE.modalRowIndex;
+      return idx >= 0 ? STATE.filteredRows[idx] : null;
+    }
+
+    function downloadDetail() {
+      const row = currentDetailRow();
+      if (!row) return;
+      return withDetailButtons(async () => {
+        const data = detailExportData(row);
+        try {
+          downloadBlob(await renderDetailPng(data), data.fileName);
+        } catch (err) {
+          alert('No se pudo descargar la ficha: ' + err.message);
+        }
+      });
+    }
+
+    // Comparte la imagen con la hoja nativa del teléfono (WhatsApp, correo…).
+    // Si el navegador no comparte archivos, comparte el texto; si tampoco, descarga.
+    function shareDetail() {
+      const row = currentDetailRow();
+      if (!row) return;
+      return withDetailButtons(async () => {
+        const data = detailExportData(row);
+        const text = [`${data.title}: ${data.id}`, data.sub, data.link && `Ver en Rio Map: ${data.link}`]
+          .filter(Boolean).join('\n');
+        try {
+          const blob = await renderDetailPng(data);
+          const file = new File([blob], data.fileName, { type: 'image/png' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: `${data.title} ${data.id}`, text });
+          } else if (navigator.share) {
+            const fullText = text + '\n\n' + data.fields.map(f => `${f.label}: ${f.value}`).join('\n');
+            await navigator.share({ title: `${data.title} ${data.id}`, text: fullText });
+          } else {
+            downloadBlob(blob, data.fileName);
+          }
+        } catch (err) {
+          if (err && err.name === 'AbortError') return; // el usuario cerró la hoja de compartir
+          alert('No se pudo compartir la ficha: ' + err.message);
+        }
+      });
     }
 
     // Unified global keyboard handler.

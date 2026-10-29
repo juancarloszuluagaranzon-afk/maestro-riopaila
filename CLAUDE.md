@@ -217,11 +217,11 @@ Un release desincronizado deja a los usuarios con caché vieja y sin forma de ac
 |---|---|
 | `service-worker.js` | `CACHE_VERSION` |
 | `index.html` | `APP_VERSION` |
-| `index.html` | texto visible `v2.5.1 • 2026 Edition` al pie |
+| `index.html` | texto visible `v2.5.2 • 2026 Edition` al pie |
 | `maestro.html` | `CONFIG.version` |
 | `maestro.html` | `<span id="appVersion">` en el encabezado |
 
-Versión actual: **v2.5.1**. Comprobación rápida — deben salir 5 coincidencias iguales:
+Versión actual: **v2.5.2**. Comprobación rápida — deben salir 5 coincidencias iguales:
 
 ```bash
 grep -oh "v2\.[0-9]*\.[0-9]*" index.html maestro.html service-worker.js | sort | uniq -c
